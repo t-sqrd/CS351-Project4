@@ -1,6 +1,8 @@
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.stream.Stream;
 
 public class Agent extends Thread{
     public String userName;
@@ -9,6 +11,9 @@ public class Agent extends Thread{
     private int port;
     private String host;
     public volatile boolean bidding = false;
+    private volatile boolean creatingAccount = false;
+    private ArrayList<String> userInfo = new ArrayList<>();
+
 
 
     public static void main(String args[]) {
@@ -20,11 +25,7 @@ public class Agent extends Thread{
 
         test.createAccount();
         test.bidding = true;
-        test.notify();
-
-
-
-
+        //test.notify();
     }
 
     public Agent(String host, int port, String initBid, String userName) {
@@ -39,60 +40,53 @@ public class Agent extends Thread{
     public double placeBid(double bid){
 
 
-
-
-
         return 0;
     }
     public void run() {
 
         while (true) {
             try {
-                if (!bidding) {
+                if (!bidding || !creatingAccount) {
                     wait();
                 }
+                else{
 
-            } catch (InterruptedException e) {
-
+                    createAccount();
+                }
             }
 
+            catch (InterruptedException e) {
 
+            }
         }
 
     }
 
     public void createAccount() {
+
         try {
             //String serverHostname = new String("127.0.0.1");
             //String serverHostname = new String("129.24.112.247");
 
+            creatingAccount = true;
             System.out.println("Connecting to host " + host + " on port " + port + ".");
             Socket echoSocket = null;
             Reader tempIn = new StringReader(userName);
             BufferedReader clientIn = new BufferedReader(tempIn);
 
+            //serverOut sends message to server (name, amount, initial bid)
             DataOutputStream serverOut = null;
-            //OutputStream serverOut = null;
-            BufferedReader serverIn = null;
-            // DataInputStream serverIn = null;
 
+            BufferedReader accountInfo = null;
+            BufferedReader serverIn = null;
 
             try {
+
                 echoSocket = new Socket(host, 8081);
-
-
                 serverOut = new DataOutputStream(echoSocket.getOutputStream());
-
-
+                accountInfo = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
                 serverIn = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-                //serverIn = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-                //echoSocket = new Socket(serverHostname, 8081);
 
-                //out = new PrintWriter(echoSocket.getOutputStream(), true);
-
-                //serverOut = new DataOutputStream(echoSocket.getOutputStream());
-                //in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-                //serverIn = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
 
 
             } catch (UnknownHostException e) {
@@ -103,37 +97,40 @@ public class Agent extends Thread{
                 System.exit(1);
             }
 
-            /** {@link UnknownHost} object used to read from console */
-            BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-
-
-            //System.out.print("client: ");
-            System.out.print("Client: NAME & AMOUNT ");
-            //String userInput = stdIn.readLine();
-            /** Exit on 'q' char sent */
-//                if ("q".equals(clientIn.readLine())) {
-//                    //break;
-//                }
-
             String message = clientIn.readLine();
             serverOut.writeBytes(message + '\n');
 
+           // String accountNum = accountInfo.readLine();
+            //String x = serverIn.readLine();
+            //sortInfo(accountNum);
+            Stream<String> s = accountInfo.lines();
+            sortInfo(s);
 
-            String result = serverIn.readLine();
 
+            System.out.print("Client: NAME & AMOUNT ");
 
-            System.out.println("server: " + result);
+            //System.out.println("Your account number is " + accountNum);
 
 
             /** Closing all the resources */
-//            serverOut.close();
-//            serverIn.close();
-//            clientIn.close();
-//            echoSocket.close();
+            serverOut.close();
+            accountInfo.close();
+            serverIn.close();
+            clientIn.close();
+            echoSocket.close();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    public void sortInfo(Stream<String> info){
+        Object[] temp = info.toArray();
+        System.out.println("My info");
+        for(int i = 0; i < temp.length; i++){
+            System.out.println(temp[i]);
+
+        }
+
     }
 
 
