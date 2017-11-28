@@ -14,12 +14,16 @@ public class TestServer extends Thread {
     public static Map<String, Integer> nameAndBid = new HashMap<>();
     public volatile boolean isConnected = false;
     private String infoMessage = "";
+    private Bank bank;
 
     protected Socket socket;
 
 
     private TestServer(Socket socket) {
+
         this.socket = socket;
+        bank = new Bank(socket);
+
         System.out.println("New client connected from " + socket.getInetAddress().getHostAddress());
         start();
     }
@@ -69,63 +73,100 @@ public class TestServer extends Thread {
     }
     
 
-    public void creatAccount(){
-        InputStream in = null;
-        OutputStream out = null;
+    public void run(){
 
-        try {
-            in = socket.getInputStream();
-            out = socket.getOutputStream();
+            InputStream in = null;
+            OutputStream out = null;
 
-            DataOutputStream accountInfoOut = new DataOutputStream(out);
-            DataOutputStream serverOut = new DataOutputStream(out);
+            try {
+                in = socket.getInputStream();
+                out = socket.getOutputStream();
 
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
-
-            String request = br.readLine();
-
-            //String message;
-            int id = createBiddingNum();
-            String biddingNum = Integer.toString(id);
+                //DataOutputStream accountInfoOut = new DataOutputStream(out);
+                DataOutputStream serverOut = new DataOutputStream(out);
 
 
-            //while (isConnected) {
+                BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
-            System.out.println("Message received:" + request);
-            if (correctInput(request)) {
-                infoMessage += biddingNum + '\n';
-                infoMessage += "Account Created\n";
-                IDmap.put(id, nameAndBid);
-                System.out.println("ID: " + id);
-                accountInfoOut.writeBytes(biddingNum);
-            }
+                String request;
+                while((request = br.readLine()) != null) {
 
-            else {
-                infoMessage += "Account voided\n";
-            }
 
-            accountInfoOut.writeBytes(infoMessage);
-            infoMessage = "";
+                    //String message;
+//                    int id = createBiddingNum();
+//                    String biddingNum = Integer.toString(id);
 
-        }
-            catch (IOException ex) {
-                System.out.println("Unable to get streams from client");
-            }
-            finally {
-                try {
-                    in.close();
-                    out.close();
-                    socket.close();
 
-                } catch (IOException ex) {
-                    ex.printStackTrace();
+
+                    //while (isConnected) {
+
+                    System.out.println("Message received:" + request);
+
+
+                    if(request.equals("Open Account")){
+
+                        bank.start();
+                        createAccount();
+                        break;
+
+                    }
+                    else if(request.equals("Login")){
+
+                        bank.start();
+                        accountLogin();
+                        break;
+
+                    }
+
+                    serverOut.writeBytes(request + '\n');
+
+
+
+//                    if (correctInput(request)) {
+////                        infoMessage += biddingNum + '\n';
+////                        infoMessage += "Account Created\n";
+////                        IDmap.put(id, nameAndBid);
+////                        System.out.println("ID: " + id);
+////                        accountInfoOut.writeBytes(biddingNum);
+//                    } else {
+//                        infoMessage += "Account voided\n";
+//                    }
+//
+//                    accountInfoOut.writeBytes(infoMessage);
+//                    infoMessage = "";
                 }
+
+            } catch (IOException ex) {
+
+                System.out.println("Unable to get streams from client");
+//            } finally {
+//                try {
+//                    in.close();
+//                    out.close();
+//                    socket.close();
+//
+//                } catch (IOException ex) {
+//                    ex.printStackTrace();
+//                }
+//            }
             }
+
+
     }
 
-    public void run() {
-     creatAccount();
+
+
+    private void createAccount(){
+
+        //bank = new Bank(socket);
     }
+
+
+    private void accountLogin(){
+
+        //bank = new Bank(socket);
+    }
+
 
     public static void main(String[] args) {
         System.out.println("SocketServer Example");
