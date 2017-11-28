@@ -29,12 +29,11 @@ public class Bank extends Thread {
     }
 
     private boolean login(String input){
-
-            for(int i = 0; i < input.length(); i++) {
-                if(!Character.isDigit(input.charAt(i))) {
-                    return false;
-                }
+        for(int i = 0; i < input.length(); i++) {
+            if(!Character.isDigit(input.charAt(i))) {
+                return false;
             }
+        }
 
         return true;
     }
@@ -53,7 +52,8 @@ public class Bank extends Thread {
             BufferedReader agentInfo = new BufferedReader(new InputStreamReader(agentIn));
 
 
-            String message = " you are in the banking server" + '\n';
+            //String message = " you are in the banking server" + '\n';
+            String message = "For login enter account # for new account type name\n";
             toClient.writeBytes("From bank : " + message);
             String response = "";
             String request;
@@ -61,17 +61,19 @@ public class Bank extends Thread {
             while((request = agentInfo.readLine()) != null){
 
                 toClient.writeBytes("Request to bank : " + request);
+
                 printAccount();
 
                 if(request.contains("login")){
-                    String str = request.replace("login" , "");
+                    String str = request.replace("login " , "");
+                    System.out.println(str);
                     if(login(str)){
-                    int temp = Integer.parseInt(request);
-                    if(!bankMap.isEmpty() && bankMap.containsKey(temp)) {
+                    int temp = Integer.parseInt(str);
+                    if(!bankMap.isEmpty() && bankMap.containsKey(str)) {
                         System.out.println("entered");
-                        bankMap.get(temp);
-                        response = " Account info " + bankMap.get(temp).returnPackage();
-                        System.out.println(bankMap.get(temp).returnPackage());
+                        bankMap.get(str);
+                        response = " Account info " + bankMap.get(str).returnPackage();
+                        System.out.println(bankMap.get(str).returnPackage());
 
                         }
 
@@ -84,7 +86,7 @@ public class Bank extends Thread {
 
                 else {
 
-                    account = new Account(request);
+                    Account account = new Account(request);
                     bankMap.put(account.getAccountNumber(), account);
                     String temp = account.returnPackage();
 
@@ -93,6 +95,7 @@ public class Bank extends Thread {
                 }
 
                 toClient.writeBytes(response + '\n');
+                response = "";
 
             }
 
