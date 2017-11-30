@@ -86,13 +86,13 @@ public class Server2 extends Thread {
         ServerSocket server = null;
         try {
             server = new ServerSocket(PORT_NUMBER);
-          //  while (true) {
+            while (true) {
                 /**
                  * create a new {@link SocketServer} object for each connection
                  * this will allow multiple client connections
                  */
                 new Server2(server.accept());
-           // }
+            }
 
         } catch (IOException ex) {
             System.out.println("Unable to start Server2.");
