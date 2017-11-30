@@ -103,6 +103,7 @@ public class TestServer extends Thread {
                     }
 
                     clientOut.writeObject(temp);
+                    clientOut.flush();
 
 
 

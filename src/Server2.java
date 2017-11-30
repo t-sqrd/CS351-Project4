@@ -44,6 +44,7 @@ public class Server2 extends Thread {
                    response = new Message();
                    response.message = "Fuck off...";
                    toBank.writeObject(response);
+                   toBank.flush();
                }
 
             }

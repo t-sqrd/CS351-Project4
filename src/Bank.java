@@ -50,7 +50,7 @@ public class Bank extends Thread {
             agentInfo = new ObjectInputStream(agentIn);
 
             Message request;
-            Message response = new Message();
+            Message response;
             while((request = (Message)agentInfo.readObject()) != null) {
 
                 if(request.HOME) break;
@@ -64,7 +64,6 @@ public class Bank extends Thread {
 
                 if(request.viewAuctionHouses){
                     response = new Message();
-                    response = (Message)connectToAuctionHouse(request);
                     toClient.writeObject(response);
 
                 }
@@ -130,6 +129,7 @@ public class Bank extends Thread {
 
 
             toAuction.writeObject(message);
+
 
             return fromAuction.readObject();
 

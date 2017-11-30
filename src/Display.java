@@ -44,7 +44,7 @@ public class Display extends AnimationTimer{
                         //Agent agent = new Agent("127.0.0.1", 8081, amount.getText(), name.getText());
                         username = name.getText();
                         initAmount = amount.getText();
-                        Agent agent = new Agent("127.0.0.1", 8081, initAmount, username);
+//                        Agent agent = new Agent("127.0.0.1", 8081, initAmount, username);
 
 
                     }

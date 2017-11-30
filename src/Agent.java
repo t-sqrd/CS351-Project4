@@ -8,7 +8,8 @@ import java.util.stream.Stream;
 public class Agent extends Thread {
     public String userName;
     private String initBid;
-    private int port;
+    private int BANK_PORT = 8080;
+    private int CENTRAL_PORT = 8081;
     private String host;
     public volatile boolean bidding = false;
     private volatile boolean creatingAccount = false;
@@ -29,21 +30,17 @@ public class Agent extends Thread {
         //String host = "129.24.112.247"; //work IP
 
         int port = 8080;
-         new Agent(host, port, "1110", "Alex");
+         new Agent(host, "1110", "Alex");
 
 
 
     }
 
-    public Agent(String host, int port, String initBid, String userName) {
-        userName += initBid;
-        this.initBid = initBid;
-        this.userName = userName;
-        this.host = host;
-        this.port = port;
+    public Agent(String host, String initBid, String userName) {
+
         this.encrypt = new Encrypt();
 
-        createAccount();
+        userInput();
 
 
     }
@@ -54,35 +51,45 @@ public class Agent extends Thread {
         return 0;
     }
 
+    private void changeSocket() {
+
+
+    }
 
 
 
-
-
-    public void createAccount() {
+    private void userInput() {
 
         try {
 
             creatingAccount = true;
-            System.out.println("Connecting to host " + host + " on port " + port + ".");
-            Socket echoSocket = null;
-            Reader tempIn = new StringReader(userName);
+            System.out.println("Connecting to host " + host + " on port " + BANK_PORT + ".");
+            Socket bankSocket = null;
+            Socket centralSocket = null;
+            //Reader tempIn = new StringReader(userName);
             BufferedReader in = null;
 
 
             //serverOut sends message to server (name, amount, initial bid)
 
 
-            ObjectOutputStream toServer = null;
-            ObjectInputStream fromServer = null;
+            ObjectOutputStream toBankServer = null;
+            ObjectInputStream fromBankServer = null;
+
+            ObjectOutputStream toCentralServer = null;
+            ObjectInputStream fromCentralServer = null;
 
             try {
 
-                echoSocket = new Socket(host, port);
+                bankSocket = new Socket(host, BANK_PORT);
+                centralSocket = new Socket(host, CENTRAL_PORT);
                 //serverOut = new DataOutputStream(echoSocket.getOutputStream());
                 //in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-                toServer = new ObjectOutputStream(echoSocket.getOutputStream());
-                fromServer = new ObjectInputStream(echoSocket.getInputStream());
+                toBankServer = new ObjectOutputStream(bankSocket.getOutputStream());
+                fromBankServer = new ObjectInputStream(bankSocket.getInputStream());
+
+                toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
+                fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
 
 
@@ -97,7 +104,7 @@ public class Agent extends Thread {
             }
 
             System.out.println("Options : Make Account / View Bidding Houses ");
-            System.out.println("To return to main menu type HOME ");
+            System.out.println("To return to main menu typ HOME ");
 
             BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
             boolean flag = false;
@@ -113,12 +120,12 @@ public class Agent extends Thread {
                         String info;
                         System.out.println("Please Enter Name: ");
 
-                       while ((info = stdin.readLine()) != null) {
+                       while ((info = stdin.readLine()) != null && !flag) {
                             send.username = info;
                             send.newAccount = true;
-                            if (send.hasNewAccountInfo()) break;
-                            toServer.writeObject(send);
-                            System.out.println(((Message)fromServer.readObject()).getMessage());
+                            if (send.hasNewAccountInfo()) flag = true;
+                            toBankServer.writeObject(send);
+                            System.out.println(((Message)fromBankServer.readObject()).getMessage());
                         }
                     System.out.println("EXITED THIS LOOP");
 
@@ -128,19 +135,15 @@ public class Agent extends Thread {
                 if (ui.equalsIgnoreCase("View Bidding Houses")) {
                     Message send = new Message();
                     send.viewAuctionHouses = true;
-                    toServer.writeObject(send);
-                    System.out.println(((Message)fromServer.readObject()).getMessage());
+                    toCentralServer.writeObject(send);
+                    System.out.println(((Message)fromCentralServer.readObject()).getMessage());
 
                     }
 
-                if(ui.equals("HOME")){
-                    Message send = new Message();
-                    send.HOME = true;
-                    toServer.writeObject(send);
-                }
 
 
-                toServer.flush();
+                toBankServer.flush();
+                toCentralServer.flush();
 
             }
 
@@ -153,10 +156,13 @@ public class Agent extends Thread {
 
 
             /** Closing all the resources */
-            toServer.close();
-            fromServer.close();
+            toBankServer.close();
+            fromBankServer.close();
+            toCentralServer.close();
+            fromCentralServer.close();
+
             in.close();
-            echoSocket.close();
+            bankSocket.close();
 
         } catch (Exception e) {
             e.printStackTrace();
