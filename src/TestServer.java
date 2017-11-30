@@ -8,13 +8,13 @@ import java.util.Map;
 import java.util.Random;
 
 public class TestServer extends Thread {
-    public static final int PORT_NUMBER = 8081;
+    public static final int PORT_NUMBER = 8080;
 
     public static HashMap<Integer, Map<String, Integer>> IDmap = new HashMap<>();
     public static Map<String, Integer> nameAndBid = new HashMap<>();
     public volatile boolean isConnected = false;
     private String infoMessage = "";
-    private Bank bank;
+    //private Bank bank;
 
     protected Socket socket;
 
@@ -22,7 +22,9 @@ public class TestServer extends Thread {
     private TestServer(Socket socket) {
 
         this.socket = socket;
-        bank = new Bank(socket);
+        //bank = new Bank(socket);
+        //Server2 server = new Server2(socket);
+
 
         System.out.println("New client connected from " + socket.getInetAddress().getHostAddress());
         start();
@@ -83,42 +85,56 @@ public class TestServer extends Thread {
                 out = socket.getOutputStream();
 
                 //DataOutputStream accountInfoOut = new DataOutputStream(out);
-                DataOutputStream serverOut = new DataOutputStream(out);
+               // DataOutputStream serverOut = new DataOutputStream(out);
 
 
-                BufferedReader br = new BufferedReader(new InputStreamReader(in));
+                ObjectOutputStream clientOut = new ObjectOutputStream(out);
 
-                String request;
-                while((request = br.readLine()) != null) {
+                ObjectInputStream serverIn = new ObjectInputStream(in);
 
+                Message temp;
 
-                    //String message;
-//                    int id = createBiddingNum();
-//                    String biddingNum = Integer.toString(id);
-
-
-
-                    //while (isConnected) {
-
-                    System.out.println("Message received:" + request);
-
-
-                    if(request.equals("Open Account")){
-
-                        bank.start();
-                        createAccount();
-                        break;
-
-                    }
-                    else if(request.equals("Login")){
-
-                        bank.start();
-                        accountLogin();
-                        break;
+                while ((temp = (Message)serverIn.readObject()) != null) {
+                    System.out.println("ENTERED");
+                    System.out.println(temp.newAccount);
+                    if (temp.newAccount) {
+                        //bank.start();
 
                     }
 
-                    serverOut.writeBytes(request + '\n');
+                    clientOut.writeObject(temp);
+
+
+
+
+
+//                BufferedReader br = new BufferedReader(new InputStreamReader(in));
+//
+//                String request;
+//                while((request = br.readLine()) != null) {
+//
+//
+//
+//
+//                    System.out.println("Message received:" + request);
+//
+//
+//                    if(request.equals("Open Account")){
+//
+//                        bank.start();
+//                        createAccount();
+//                        break;
+//
+//                    }
+//                    else if(request.equals("Login")){
+//
+//                        bank.start();
+//                        accountLogin();
+//                        break;
+//
+//                    }
+
+                  //  serverOut.writeBytes(request + '\n');
 
 
 
@@ -136,7 +152,13 @@ public class TestServer extends Thread {
 //                    infoMessage = "";
                 }
 
-            } catch (IOException ex) {
+            }
+
+            catch(ClassNotFoundException e){
+
+            }
+
+            catch (IOException ex) {
 
                 System.out.println("Unable to get streams from client");
 //            } finally {
@@ -169,7 +191,7 @@ public class TestServer extends Thread {
 
 
     public static void main(String[] args) {
-        System.out.println("SocketServer Example");
+        System.out.println("Test Server");
         ServerSocket server = null;
         try {
             server = new ServerSocket(PORT_NUMBER);

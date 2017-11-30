@@ -27,6 +27,7 @@ public class Account extends HashMap{
     public Account(String clientName){
         this.clientName = clientName;
         this.clientNumber = makeAccountNumber();
+        ACCOUNT_MAP.put(clientNumber, clientName);
         this.encrypt = new Encrypt(clientNumber.toString());
         this.MY_PRIVATE_KEY = encrypt.getPrivate();
         this.MY_PUBLIC_KEY = encrypt.getPublic();
@@ -56,7 +57,7 @@ public class Account extends HashMap{
                 clientName + ", " +
                 "Account Number = " + clientNumber + " , "
                 + "Your Public Key = " + MY_PUBLIC_KEY + " , "
-                + "Balance = " + initialDeposit;
+                + "Balance = " + initialDeposit + '\n';
 
         return packet;
 
@@ -74,7 +75,10 @@ public class Account extends HashMap{
 
     private int makeAccountNumber(){
         Random rand = new Random();
-        int x = rand.nextInt(10000000);
+        int x = rand.nextInt(100000);
+        if(ACCOUNT_MAP.containsKey(x)){
+            makeAccountNumber();
+        }
 
         return x;
     }

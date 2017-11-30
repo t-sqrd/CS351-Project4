@@ -17,94 +17,88 @@ public class Bank extends Thread {
     private HashMap<Integer, Account> bankMap = new HashMap<>();
     private static LinkedList<Account> accounts = new LinkedList<>();
     private Socket socket;
+    private Socket auctionSocket;
     private final int MAX_ACCOUNTS = 10000;
     private static HashMap<Integer, Account> listOfAccountNums = new HashMap<>();
     private String clientName;
     private Account account;
+    public static final int PORT_NUMBER = 8080;
+    public static final int AUCTION_CENTRAL_PORT = 8081;
+    String host = "127.0.0.1";
 
     public Bank(Socket socket){
         this.socket = socket;
-        System.out.println("Banking Server connected...");
+        start();
 
     }
 
-    private boolean login(String input){
-        for(int i = 0; i < input.length(); i++) {
-            if(!Character.isDigit(input.charAt(i))) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private void createBankAccount() {
+    public void run() {
         InputStream agentIn = null;
         OutputStream bankOut = null;
+
+        ObjectOutputStream toClient = null;
+        ObjectInputStream agentInfo = null;
+
+
         try {
 
-            agentIn = socket.getInputStream();
             bankOut = socket.getOutputStream();
-
-            DataOutputStream toClient = new DataOutputStream(bankOut);
-
-
-            BufferedReader agentInfo = new BufferedReader(new InputStreamReader(agentIn));
+            agentIn = socket.getInputStream();
 
 
-            //String message = " you are in the banking server" + '\n';
-            String message = "For login enter account # for new account type name\n";
-            toClient.writeBytes("From bank : " + message);
-            String response = "";
-            String request;
+            toClient = new ObjectOutputStream(bankOut);
+            agentInfo = new ObjectInputStream(agentIn);
 
-            while((request = agentInfo.readLine()) != null){
+            Message request;
+            Message response = new Message();
+            while((request = (Message)agentInfo.readObject()) != null) {
 
-                toClient.writeBytes("Request to bank : " + request);
-
-                printAccount();
-
-                if(request.contains("login")){
-                    String str = request.replace("login " , "");
-                    System.out.println(str);
-                    if(login(str)){
-                    int temp = Integer.parseInt(str);
-                    if(!bankMap.isEmpty() && bankMap.containsKey(str)) {
-                        System.out.println("entered");
-                        bankMap.get(str);
-                        response = " Account info " + bankMap.get(str).returnPackage();
-                        System.out.println(bankMap.get(str).returnPackage());
-
-                        }
-
-                    }
-                    else{
-                        response = " Account does not exist";
-                    }
-
-                }
-
-                else {
-
-                    Account account = new Account(request);
+                if(request.HOME) break;
+                if(request.newAccount){
+                    response = new Message();
+                    Account account = new Account(request.username);
                     bankMap.put(account.getAccountNumber(), account);
-                    String temp = account.returnPackage();
+                    response.message = account.returnPackage();
+                    toClient.writeObject(response);
+                }
 
-                    response = " Your account has been created... " + temp;
+                if(request.viewAuctionHouses){
+                    response = new Message();
+                    response = (Message)connectToAuctionHouse(request);
+                    toClient.writeObject(response);
 
                 }
 
-                toClient.writeBytes(response + '\n');
-                response = "";
 
+
+//                else {
+//
+//                    Account account = new Account(request);
+//                    bankMap.put(account.getAccountNumber(), account);
+//                    String temp = account.returnPackage();
+//
+//                    response = " Your account has been created... " + temp;
+//
+//                }
+//
+//                toClient.writeBytes(response + '\n');
+//                response = "";
+//
             }
 
 
 
-        } catch (IOException ex) {
+        }
+        catch(ClassNotFoundException ex){
+            System.err.print(ex.getCause());
 
-            System.out.println("Unable to get streams from client");
-        } finally {
+        }
+        catch (IOException ex) {
+
+            System.err.print(ex.getCause());
+            System.out.println("Unable to get streams from client in bank server");
+        }
+        finally {
             try {
                 agentIn.close();
                 bankOut.close();
@@ -118,14 +112,37 @@ public class Bank extends Thread {
 
     }
 
-    private void printAccount(){
-        for(Account a : accounts){
-            System.out.println(a.returnPackage());
+
+    private Object connectToAuctionHouse(Message message){
+
+        OutputStream out = null;
+        InputStream in = null;
+
+        ObjectOutputStream toAuction = null;
+        ObjectInputStream fromAuction = null;
+
+        try {
+            String host = "127.0.0.1";
+            auctionSocket = new Socket(host, AUCTION_CENTRAL_PORT);
+
+            toAuction = new ObjectOutputStream(auctionSocket.getOutputStream());
+            fromAuction = new ObjectInputStream(auctionSocket.getInputStream());
+
+
+            toAuction.writeObject(message);
+
+            return fromAuction.readObject();
+
         }
-    }
 
+        catch(IOException e){
 
-    private void buildAccount(String name){
+        }
+        catch(ClassNotFoundException e){
+
+        }
+        return null;
+
 
     }
 
@@ -147,16 +164,13 @@ public class Bank extends Thread {
 
     }
 
-    public void run(){
 
-        createBankAccount();
-    }
 
     public static void main(String[] args) {
-        System.out.println("SocketServer Example");
+        System.out.println("Banking Server connected...");
         ServerSocket server = null;
         try {
-            server = new ServerSocket(8080);
+            server = new ServerSocket(PORT_NUMBER);
             while (true) {
                 /**
                  * create a new {@link SocketServer} object for each connection
@@ -166,7 +180,7 @@ public class Bank extends Thread {
             }
 
         } catch (IOException ex) {
-            System.out.println("Unable to start server.");
+            System.out.println("Unable to start Banking server.");
         } finally {
             try {
                 if (server != null)

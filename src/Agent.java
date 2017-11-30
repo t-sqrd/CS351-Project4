@@ -2,12 +2,12 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.stream.Stream;
 
 public class Agent extends Thread {
     public String userName;
     private String initBid;
-    String message;
     private int port;
     private String host;
     public volatile boolean bidding = false;
@@ -19,10 +19,16 @@ public class Agent extends Thread {
 
 
     public static void main(String args[]) {
-        //String host = "129.24.112.247"; //work IP
-        String host = "127.0.0.1";
 
-        int port = 8081;
+
+        String host = "127.0.0.1";
+//        System.out.println("Please enter IP address ");
+//        Scanner scanner = new Scanner(System.in);
+//        String t = scanner.next();
+//        host = t;
+        //String host = "129.24.112.247"; //work IP
+
+        int port = 8080;
          new Agent(host, port, "1110", "Alex");
 
 
@@ -48,29 +54,14 @@ public class Agent extends Thread {
         return 0;
     }
 
-    public void run() {
 
-        while (true) {
-            try {
-                if (!bidding || !creatingAccount) {
-                    wait();
-                } else {
 
-                    createAccount();
-                }
-            } catch (InterruptedException e) {
 
-            }
-        }
-
-    }
 
 
     public void createAccount() {
 
         try {
-            //String serverHostname = new String("127.0.0.1");
-            //String serverHostname = new String("129.24.112.247");
 
             creatingAccount = true;
             System.out.println("Connecting to host " + host + " on port " + port + ".");
@@ -80,45 +71,80 @@ public class Agent extends Thread {
 
 
             //serverOut sends message to server (name, amount, initial bid)
-            DataOutputStream serverOut = null;
 
-            BufferedReader accountInfo = null;
-            BufferedReader serverIn = null;
+
+            ObjectOutputStream toServer = null;
+            ObjectInputStream fromServer = null;
 
             try {
 
-                echoSocket = new Socket(host, 8081);
-                serverOut = new DataOutputStream(echoSocket.getOutputStream());
-                in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-                //accountInfo = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-               // serverIn = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+                echoSocket = new Socket(host, port);
+                //serverOut = new DataOutputStream(echoSocket.getOutputStream());
+                //in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+                toServer = new ObjectOutputStream(echoSocket.getOutputStream());
+                fromServer = new ObjectInputStream(echoSocket.getInputStream());
+
+
+
 
 
             } catch (UnknownHostException e) {
                 System.err.println("Unknown host: " + host);
                 System.exit(1);
             } catch (IOException e) {
-                System.err.println("Unable to get streams from server");
+                System.err.println("Unable to get streams from server in Agent");
                 System.exit(1);
             }
 
+            System.out.println("Options : Make Account / View Bidding Houses ");
+            System.out.println("To return to main menu type HOME ");
+
             BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+            boolean flag = false;
+            String ui;
             while (true) {
-                String ui = stdin.readLine();
-                serverOut.writeBytes(ui + '\n');
+
+                ui = stdin.readLine();
+                //serverOut.writeBytes(ui + '\n');
                 if ("q".equals(ui)) break;
-                System.out.println("SERVER : " + in.readLine());
+                if (ui.equals("Make Account")) {
+
+                        Message send = new Message();
+                        String info;
+                        System.out.println("Please Enter Name: ");
+
+                       while ((info = stdin.readLine()) != null) {
+                            send.username = info;
+                            send.newAccount = true;
+                            if (send.hasNewAccountInfo()) break;
+                            toServer.writeObject(send);
+                            System.out.println(((Message)fromServer.readObject()).getMessage());
+                        }
+                    System.out.println("EXITED THIS LOOP");
+
+                    }
+
+
+                if (ui.equalsIgnoreCase("View Bidding Houses")) {
+                    Message send = new Message();
+                    send.viewAuctionHouses = true;
+                    toServer.writeObject(send);
+                    System.out.println(((Message)fromServer.readObject()).getMessage());
+
+                    }
+
+                if(ui.equals("HOME")){
+                    Message send = new Message();
+                    send.HOME = true;
+                    toServer.writeObject(send);
+                }
+
+
+                toServer.flush();
 
             }
 
-//            String message = clientIn.readLine();
-//            serverOut.writeBytes(message + '\n');
 
-            // String accountNum = accountInfo.readLine();
-            //String x = serverIn.readLine();
-            //sortInfo(accountNum);
-//            Stream<String> s = accountInfo.lines();
-//            sortInfo(s);
 
 
             System.out.print("Client: NAME & AMOUNT ");
@@ -127,8 +153,8 @@ public class Agent extends Thread {
 
 
             /** Closing all the resources */
-            serverOut.close();
-            serverIn.close();
+            toServer.close();
+            fromServer.close();
             in.close();
             echoSocket.close();
 
@@ -138,19 +164,6 @@ public class Agent extends Thread {
     }
 
 
-
-
-    public void sortInfo(Stream<String> info){
-        Object[] temp = info.toArray();
-        System.out.println("My info");
-
-        for(int i = 0; i < temp.length; i++){
-
-            System.out.println(temp[i]);
-
-        }
-
-    }
 
 
 }
