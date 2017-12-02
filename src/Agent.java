@@ -10,12 +10,13 @@ public class Agent extends Thread {
     private String initBid;
     private int BANK_PORT = 8080;
     private int CENTRAL_PORT = 8081;
-    private String host;
+    private String host = "127.0.0.1";
     public volatile boolean bidding = false;
     private volatile boolean creatingAccount = false;
     private ArrayList<String> userInfo = new ArrayList<>();
     public String myAccountNum = "";
     private Encrypt encrypt;
+
 
 
 
@@ -30,7 +31,7 @@ public class Agent extends Thread {
         //String host = "129.24.112.247"; //work IP
 
         int port = 8080;
-         new Agent(host, "1110", "Alex");
+        new Agent(host, "1110", "Alex");
 
 
 
@@ -45,16 +46,6 @@ public class Agent extends Thread {
 
     }
 
-    public double placeBid(double bid) {
-
-
-        return 0;
-    }
-
-    private void changeSocket() {
-
-
-    }
 
 
 
@@ -63,12 +54,12 @@ public class Agent extends Thread {
         try {
 
             creatingAccount = true;
-            System.out.println("Connecting to host " + host + " on port " + BANK_PORT + ".");
+            System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
+
             Socket bankSocket = null;
             Socket centralSocket = null;
-            //Reader tempIn = new StringReader(userName);
-            BufferedReader in = null;
 
+            //Reader tempIn = new StringReader(userName);
 
             //serverOut sends message to server (name, amount, initial bid)
 
@@ -91,11 +82,11 @@ public class Agent extends Thread {
                 toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
                 fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
+                System.out.println("here");
 
+            }
 
-
-
-            } catch (UnknownHostException e) {
+            catch (UnknownHostException e) {
                 System.err.println("Unknown host: " + host);
                 System.exit(1);
             } catch (IOException e) {
@@ -110,10 +101,9 @@ public class Agent extends Thread {
             boolean flag = false;
             String ui;
             while (true) {
-
                 ui = stdin.readLine();
                 //serverOut.writeBytes(ui + '\n');
-                if ("q".equals(ui)) break;
+                if ("q".equals(ui))break;
                 if (ui.equals("Make Account")) {
 
                         Message send = new Message();
@@ -126,6 +116,7 @@ public class Agent extends Thread {
                             if (send.hasNewAccountInfo()) flag = true;
                             toBankServer.writeObject(send);
                             System.out.println(((Message)fromBankServer.readObject()).getMessage());
+
                         }
                     System.out.println("EXITED THIS LOOP");
 
@@ -136,40 +127,29 @@ public class Agent extends Thread {
                     Message send = new Message();
                     send.viewAuctionHouses = true;
                     toCentralServer.writeObject(send);
-                    System.out.println(((Message)fromCentralServer.readObject()).getMessage());
-
-                    }
-
+                    System.out.println(((Message)fromCentralServer.readObject()).askForList);
+                }
 
 
-                toBankServer.flush();
-                toCentralServer.flush();
+                toBankServer.reset();
+                toCentralServer.reset();
+                flag = false;
+
 
             }
 
-
-
-
-            System.out.print("Client: NAME & AMOUNT ");
-
-            //System.out.println("Your account number is " + accountNum);
-
-
-            /** Closing all the resources */
             toBankServer.close();
             fromBankServer.close();
             toCentralServer.close();
             fromCentralServer.close();
-
-            in.close();
             bankSocket.close();
+            centralSocket.close();
 
-        } catch (Exception e) {
+        }
+
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-
-
 
 }
