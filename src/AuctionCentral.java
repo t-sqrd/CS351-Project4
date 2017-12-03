@@ -25,6 +25,10 @@ public class AuctionCentral extends Thread {
 
     }
 
+    public void serverConnector(Socket socket){
+
+    }
+
     public void run() {
 
 
