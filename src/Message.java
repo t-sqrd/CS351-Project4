@@ -3,7 +3,6 @@
  */
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Message implements Serializable {
     private static final long serialVersionUID = -5399605122490343339L;
@@ -11,14 +10,18 @@ public class Message implements Serializable {
     String username;
     String accountNum;
     String balance;
+    String ip;
     boolean newAccount;
     boolean viewAuctionHouses;
-    boolean listOfAuctionHouses;
-    boolean askForList;
-    boolean fromHouse;
+    boolean selectHouse;
+    boolean register;
+    boolean HOME;
+    boolean addItems;
     String destination;
+    public ArrayList<String> items;
     String message;
-    ArrayList<String> list;
+
+    private ArrayList<String> itemList = new ArrayList<>();
 
 
     public Message(){
@@ -39,6 +42,13 @@ public class Message implements Serializable {
         return "From Server: " + message;
     }
 
+    public void setAuctionItems(ArrayList<String> items){
+        this.itemList = items;
+    }
+
+    public String getItemList(){
+        return itemList.get(0);
+    }
 
     public int getAccountNum(){
         return Integer.getInteger(accountNum);

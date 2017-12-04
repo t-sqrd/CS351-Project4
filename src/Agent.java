@@ -2,21 +2,18 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Scanner;
-import java.util.stream.Stream;
 
 public class Agent extends Thread {
     public String userName;
     private String initBid;
     private int BANK_PORT = 8080;
     private int CENTRAL_PORT = 8081;
-    private String host = "127.0.0.1";
+    private String host;
     public volatile boolean bidding = false;
     private volatile boolean creatingAccount = false;
     private ArrayList<String> userInfo = new ArrayList<>();
     public String myAccountNum = "";
     private Encrypt encrypt;
-
 
 
 
@@ -33,8 +30,6 @@ public class Agent extends Thread {
         int port = 8080;
         new Agent(host, "1110", "Alex");
 
-
-
     }
 
     public Agent(String host, String initBid, String userName) {
@@ -46,6 +41,16 @@ public class Agent extends Thread {
 
     }
 
+    public double placeBid(double bid) {
+
+
+        return 0;
+    }
+
+    private void changeSocket() {
+
+
+    }
 
 
 
@@ -54,12 +59,12 @@ public class Agent extends Thread {
         try {
 
             creatingAccount = true;
-            System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
-
+            System.out.println("Connecting to host " + host + " on port " + BANK_PORT + ".");
             Socket bankSocket = null;
             Socket centralSocket = null;
-
             //Reader tempIn = new StringReader(userName);
+            BufferedReader in = null;
+
 
             //serverOut sends message to server (name, amount, initial bid)
 
@@ -82,11 +87,11 @@ public class Agent extends Thread {
                 toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
                 fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
-                System.out.println("here");
 
-            }
 
-            catch (UnknownHostException e) {
+
+
+            } catch (UnknownHostException e) {
                 System.err.println("Unknown host: " + host);
                 System.exit(1);
             } catch (IOException e) {
@@ -95,61 +100,80 @@ public class Agent extends Thread {
             }
 
             System.out.println("Options : Make Account / View Bidding Houses ");
-            System.out.println("To return to main menu typ HOME ");
+            System.out.println("To return to main menu type HOME ");
 
             BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
             boolean flag = false;
             String ui;
-            while (true) {
-                ui = stdin.readLine();
-                //serverOut.writeBytes(ui + '\n');
-                if ("q".equals(ui))break;
-                if (ui.equals("Make Account")) {
 
-                        Message send = new Message();
-                        String info;
-                        System.out.println("Please Enter Name: ");
+            String request;
+            Boolean accountInput = false;
+            Boolean clientInput = false;
 
-                       while ((info = stdin.readLine()) != null && !flag) {
-                            send.username = info;
-                            send.newAccount = true;
-                            if (send.hasNewAccountInfo()) flag = true;
-                            toBankServer.writeObject(send);
-                            System.out.println(((Message)fromBankServer.readObject()).getMessage());
+            while((request = stdin.readLine()) != null){
+                System.out.println("Message received: " + request);
+                if(accountInput){
+                    Message send = new Message();
+                    send.username = request;
+                    send.newAccount = true;
+                    accountInput = false;
+                    toBankServer.writeObject(send);
+                    System.out.println(((Message)fromBankServer.readObject()).getMessage());
+                    System.out.println("\nOptions: View Bidding Houses");
+                }
+                if (clientInput){
+                    System.out.println("client you chose from list: " + request);
+                    Message send = new Message();
+                    send.message = request;
+                    send.selectHouse = true;
+                    clientInput = false;
+                    toCentralServer.writeObject(send);
+                    System.out.println(((Message)fromCentralServer.readObject()).getMessage());
+                    System.out.println("Options: Select House / View Bidding Houses");
+                }
 
-                        }
-                    System.out.println("EXITED THIS LOOP");
+                if(request.equals("Make Account")){
+                    System.out.println("Please Enter Name: ");
+                    accountInput = true;
 
-                    }
-
-
-                if (ui.equalsIgnoreCase("View Bidding Houses")) {
+                }
+                if(request.equals("View Bidding Houses")){
                     Message send = new Message();
                     send.viewAuctionHouses = true;
                     toCentralServer.writeObject(send);
-                    System.out.println(((Message)fromCentralServer.readObject()).askForList);
+                    System.out.println(((Message)fromCentralServer.readObject()).getMessage());
+                    System.out.println("Options: Select House / View Bidding Houses");
                 }
 
-
-                toBankServer.reset();
-                toCentralServer.reset();
-                flag = false;
-
-
+                if(request.equals("Select House")){
+                    System.out.println("Choose a house from the list");
+                    clientInput = true;
+                }
+                toBankServer.flush();
+                toCentralServer.flush();
             }
 
+
+            System.out.print("House: NAME & AMOUNT ");
+
+            //System.out.println("Your account number is " + accountNum);
+
+
+            /** Closing all the resources */
             toBankServer.close();
             fromBankServer.close();
             toCentralServer.close();
             fromCentralServer.close();
+
+            in.close();
             bankSocket.close();
-            centralSocket.close();
 
-        }
-
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+
+
 
 }

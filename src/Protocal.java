@@ -7,7 +7,7 @@ public class Protocal {
 
     public String process(String str) {
         if (str != null) {
-            System.out.println("Client input = " + str);
+            System.out.println("House input = " + str);
             System.out.println("Input length = " + str.length());
             System.out.println(".....");
         }

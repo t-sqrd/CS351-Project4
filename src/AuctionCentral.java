@@ -1,75 +1,97 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Random;
 
 /**
  * Created by alexschmidt-gonzales on 11/28/17.
  */
 public class AuctionCentral extends Thread {
+    Socket socket;
 
-    Socket agentSocket;
-    Socket houseSocket;
-
-    public static final int CENTER_PORT = 8081;
-    public static final int HOUSE_PORT =  4200;
-    public final int HOUSE_PORT2 = 4201;
-    public String host = "127.0.0.1";
-    private String list;
-    public static int count = 0;
+    public static final int PORT_NUMBER = 8081;
+    private Items itemList;
 
 
-    public AuctionCentral(Socket socket, Socket houseSocket) {
-       this.agentSocket = socket;
-        this.houseSocket = houseSocket;
+    public AuctionCentral(Socket socket) {
+        this.socket = socket;
+        this.itemList = Items.getInstance();
         start();
-
-    }
-
-    public void serverConnector(Socket socket){
-
     }
 
     public void run() {
+        InputStream in = null;
+        OutputStream out = null;
 
-
-        ObjectOutputStream toHouse = null;
-        ObjectInputStream fromHouse = null;
-
-        ObjectOutputStream toAgent = null;
-        ObjectInputStream fromAgent = null;
+        ObjectOutputStream toBank = null;
+        ObjectInputStream fromBank = null;
 
         try {
 
+            in = socket.getInputStream();
+            out = socket.getOutputStream();
 
-
-            toAgent = new ObjectOutputStream(agentSocket.getOutputStream());
-            fromAgent = new ObjectInputStream(agentSocket.getInputStream());
-
-            toHouse = new ObjectOutputStream(houseSocket.getOutputStream());
-            fromHouse = new ObjectInputStream(houseSocket.getInputStream());
-
-
+            toBank = new ObjectOutputStream(out);
+            fromBank = new ObjectInputStream(in);
 
             Message request;
+            System.out.println("Entered");
+            Message response;
+           while ((request = (Message)fromBank.readObject()) != null) {
 
+               if(request.HOME) break;
 
-            while ((request = (Message)fromAgent.readObject()) != null ) {
-                System.out.println("In Auction Central Server...");
-
-                if(request.viewAuctionHouses){
-                    Message response = new Message();
-                    response.askForList = true;
-
-                    toHouse.writeObject(response);
-                    response.message = ((Message) fromHouse.readObject()).message;
-                    toAgent.writeObject(response);
-                    toHouse.reset();
-
-                }
+               if(request.viewAuctionHouses){
+                   response = new Message();
+                   response.message = itemList.getClientString();
+                   toBank.writeObject(response);
+                   toBank.flush();
+                   toBank.reset();
+               }
+               // An agent is selecting the house they
+               // would like to see the items of
+               if(request.selectHouse){
+                   String house = request.message;
+                   response = new Message();
+                   response.message = itemList.getItems(house);
+                   System.out.println("sent items to agent");
+                   toBank.writeObject(response);
+                   toBank.flush();
+                   toBank.reset();
+               }
+               if(request.register){
+                   response = new Message();
+                   response.message = "You successfully registered with auction central";
+                   System.out.println("new auction items: " + request.items);
+                   /*
+                   When a AuctionHouse sends a 'Register' message to AuctionCentral
+                   then it will initialize a new House object with the name of the
+                   Registered AuctionHouse and it's items. It will add the house object
+                   to the itemList object so they it can go back and get which items belong
+                   to a specific house when requested by the agent.
+                   */
+                   House h = new House(request.username, request.items);
+                   itemList.addHouse(request.username,h);
+                   toBank.writeObject(response);
+                   toBank.flush();
+                   toBank.reset();
+               }
+               if(request.addItems){
+                   response = new Message();
+                   response.message = "Successfully added your items to the auction.";
+                   System.out.println("adding these items: " + request.items);
+                   response.message = itemList.addItems(request.username, request.items);
+                   toBank.writeObject(response);
+                   toBank.flush();
+                   toBank.reset();
+               }
 
             }
 
+            System.out.println("Exited");
         }
+
+
 
         catch (IOException e) {
 
@@ -82,12 +104,11 @@ public class AuctionCentral extends Thread {
         finally {
             try {
 
-                fromHouse.close();
-                toHouse.close();
-                fromAgent.close();
-                toAgent.close();
-                agentSocket.close();
-                houseSocket.close();
+                fromBank.close();
+                toBank.close();
+                in.close();
+                out.close();
+                socket.close();
 
             }
             catch (IOException ex) {
@@ -97,39 +118,44 @@ public class AuctionCentral extends Thread {
         }
     }
 
+
+    public static String generateRandomChars(String candidateChars, int length) {
+        StringBuilder sb = new StringBuilder();
+        Random random = new Random();
+        for (int i = 0; i < length; i++) {
+            sb.append(candidateChars.charAt(random.nextInt(candidateChars
+                    .length())));
+        }
+
+        return sb.toString();
+    }
 
 
     public static void main(String[] args) {
-        System.out.println("Starting Auction Central...");
-        ServerSocket fromAgent = null;
-        ServerSocket fromHouse = null;
+        System.out.println("Starting AuctionCentral");
+        ServerSocket server = null;
+        //String s = generateRandomChars("ABDCEF", 2);
         try {
-            fromAgent = new ServerSocket(CENTER_PORT);
-            fromHouse = new ServerSocket(HOUSE_PORT);
-
+            server = new ServerSocket(PORT_NUMBER);
             while (true) {
-
-                new AuctionCentral(fromAgent.accept(), fromHouse.accept());
-                count++;
-                System.out.println(count);
-
+                /**
+                 * create a new {@link SocketServer} object for each connection
+                 * this will allow multiple client connections
+                 */
+                new AuctionCentral(server.accept());
             }
 
-
-        }
-
-        catch (IOException ex) {
-            System.out.println("Unable to start Auction Central.");
-        }
-        finally {
+        } catch (IOException ex) {
+            System.out.println("Unable to start AuctionCentral.");
+        } finally {
             try {
-                if (fromAgent != null) fromAgent.close();
-                if(fromHouse != null) fromHouse.close();
-            }
-
-            catch (IOException ex) {
+                if (server != null)
+                    server.close();
+            } catch (IOException ex) {
                 ex.printStackTrace();
             }
         }
     }
+
+
 }

@@ -23,7 +23,7 @@ public class TestServer extends Thread {
 
         this.socket = socket;
         //bank = new Bank(socket);
-        //Server2 server = new Server2(socket);
+        //AuctionCentral server = new AuctionCentral(socket);
 
 
         System.out.println("New client connected from " + socket.getInetAddress().getHostAddress());
