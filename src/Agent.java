@@ -2,97 +2,113 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.stream.Stream;
 
 public class Agent extends Thread {
     public String userName;
     private String initBid;
-    private int BANK_PORT = 8080;
-    private int CENTRAL_PORT = 8081;
-    private String accountName = "";
-    private Integer accountNum;
-    private String host;
+    private static int BANK_PORT = 8080;
+    private static int CENTRAL_PORT = 8081;
+    public static final String host = "127.0.0.1";
     public volatile boolean bidding = false;
     private volatile boolean creatingAccount = false;
     private ArrayList<String> userInfo = new ArrayList<>();
     public String myAccountNum = "";
-
     private Encrypt encrypt;
-    private Boolean registered = false;
-    private Boolean canBid = false;
-    private String housePicked = "";
+     Socket bankSocket = null;
+    Socket centralSocket = null;
+
+    ObjectOutputStream toBankServer;
+     ObjectOutputStream toCentralServer;
+
+    ObjectInputStream fromBankServer;
+     ObjectInputStream fromCentralServer;
+
+    public static  volatile boolean changeServer;
+
 
 
 
 
     public static void main(String args[]) {
 
-
-        String host = "127.0.0.1";
-//        System.out.println("Please enter IP address ");
-//        Scanner scanner = new Scanner(System.in);
-//        String t = scanner.next();
-//        host = t;
-        //String host = "129.24.112.247"; //work IP
-
-        int port = 8080;
-        new Agent(host, "1110", "Alex");
-
-    }
-
-    public Agent(String host, String initBid, String userName) {
-
-        this.encrypt = new Encrypt();
-
-        userInput();
+        new Agent("ALEX");
 
 
     }
 
-    public double placeBid(double bid) {
+    public Agent(String userName){
 
-
-        return 0;
-    }
-
-    private void changeSocket() {
+        this.userName = userName;
+        start();
 
 
     }
 
 
 
-    private void userInput() {
+    public void getInput(String m, boolean routeToBank){
+        try{
+
+
+
+
+            if(routeToBank){
+                Message bank = new Message();
+                bank.message = m;
+
+                toBankServer.writeObject(bank);
+                toBankServer.flush();
+
+                System.out.println("From Bank = " + fromBankServer.readObject());
+            }
+            if(!routeToBank){
+
+                Message central = new Message();
+                central.message = m;
+
+                central.username = "Agent";
+                central.askForList = true;
+                toCentralServer.writeObject(central);
+                toCentralServer.flush();
+               // System.out.println("From Central = " + fromCentralServer.readObject());
+            }
+
+        }
+        catch(IOException e){
+
+        }
+        catch(ClassNotFoundException e){
+
+        }
+    }
+
+
+
+    public void run() {
 
         try {
 
-            creatingAccount = true;
-            System.out.println("Connecting to host " + host + " on port " + BANK_PORT + ".");
-            Socket bankSocket = null;
-            Socket centralSocket = null;
-            //Reader tempIn = new StringReader(userName);
-            BufferedReader in = null;
+
+            System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
+
+            bankSocket = new Socket(host, BANK_PORT);
+            centralSocket = new Socket(host, CENTRAL_PORT);
 
 
-            //serverOut sends message to server (name, amount, initial bid)
 
-
-            ObjectOutputStream toBankServer = null;
-            ObjectInputStream fromBankServer = null;
-
-            ObjectOutputStream toCentralServer = null;
-            ObjectInputStream fromCentralServer = null;
 
             try {
 
-                bankSocket = new Socket(host, BANK_PORT);
-                centralSocket = new Socket(host, CENTRAL_PORT);
-                //serverOut = new DataOutputStream(echoSocket.getOutputStream());
-                //in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
                 toBankServer = new ObjectOutputStream(bankSocket.getOutputStream());
                 fromBankServer = new ObjectInputStream(bankSocket.getInputStream());
 
                 toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
                 fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
+
+
+
 
 
             } catch (UnknownHostException e) {
@@ -103,136 +119,164 @@ public class Agent extends Thread {
                 System.exit(1);
             }
 
-            System.out.println("To return to main menu type HOME ");
-            System.out.println("Options : Make Account (m) / View Bidding Houses (v)");
-
-            BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-
-            String request;
-            Boolean accountInput = false;
-            Boolean clientInput = false;
-            Boolean bidInput = false;
-
-            while((request = stdin.readLine()) != null){
-                //System.out.println("Message sent: " + request);
+            System.out.println("Options : Make Account / View Bidding Houses ");
+            System.out.println("To return to main menu typ HOME ");
 
 
-                if(accountInput){
-                    Message send = new Message();
-                    send.username = request;
-                    accountName = request;
-                    send.newAccount = true;
-                    accountInput = false;
-                    toBankServer.writeObject(send);
-                    Message m = (Message)fromBankServer.readObject();
-                    accountNum = m.accountNum;
-                    System.out.println(m.getMessage());
-                    printOptions();
-                }
-                if (clientInput){
-                    System.out.println("client you chose from list: " + request);
-                    housePicked = request;
-                    Message send = new Message();
-                    send.message = request;
-                    send.selectHouse = true;
-                    clientInput = false;
-                    canBid = true;
-                    toCentralServer.writeObject(send);
-                    System.out.println(((Message)fromCentralServer.readObject()).getMessage());
-                    printOptions();
-                }
-                if (bidInput){
-                    System.out.println("you chose item: " + request);
-                    Message send = new Message();
-                    send.message = request;
-                    send.username = housePicked;
-                    send.bid = 10;
-                    send.placeBid = true;
-                    bidInput = false;
-                    toCentralServer.writeObject(send);
-                    Message response = (Message)fromCentralServer.readObject();
-                    System.out.println(response.getMessage());
-                    System.out.println("should i tell the bank to bid? " + response.placeBid);
-                    Message bankSend = new Message();
-                    bankSend.message = "Hey we gonna put a hold on some cash of " + send.bid;
-                    bankSend.placeBid = true;
-                    bankSend.bid = 10;
-                    bankSend.username = accountName;
-                    bankSend.accountNum = accountNum;
-                    toBankServer.writeObject(bankSend);
-                    Message bankResponse = (Message)fromBankServer.readObject();
-                    System.out.println(bankResponse.getMessage());
-                    printOptions();
-                }
-                if(request.equals("Make Account") || request.equals("m")){
-                    System.out.println("Please Enter Name: ");
-                    accountInput = true;
-                }
-                if(request.equals("Register with Auction Central") || request.equals("r")){
-                    System.out.println("Registering with auction central...");
-                    registered = true;
-                    Message send = new Message();
-                    //send.message = accountKey;
-                    send.username = accountName;
-                    send.addAgent = true;
-                    toCentralServer.writeObject(send);
-                    System.out.println(((Message)fromCentralServer.readObject()).getMessage());
-                    //System.out.println("Options: Select House (s) / View Bidding Houses (v)");
-                    printOptions();
-                }
-                if(request.equals("View Bidding Houses") || request.equals("v")){
-                    Message send = new Message();
-                    send.viewAuctionHouses = true;
-                    toCentralServer.writeObject(send);
-                    System.out.println(((Message)fromCentralServer.readObject()).getMessage());
-                    //System.out.println("Options: Select House (s) / View Bidding Houses (v)");
-                    printOptions();
-                }
 
-                if(request.equals("Place Bid") || request.equals("p")){
-                    System.out.println("Select number of item to place bid on");
-                    bidInput = true;
+
+
+            new ListenFromServer().start();
+            Scanner in = new Scanner(System.in);
+
+            Message x = new Message();
+            x.username = "Agent";
+            toCentralServer.writeObject(x);
+
+            while(true){
+
+
+                String ui = in.nextLine();
+                if (ui.equals("Make")) {
+                    getInput(ui, true);
+
                 }
-                if(request.equals("Select House") || request.equals("s")){
-                    System.out.println("Choose a house from the list");
-                    clientInput = true;
+                if (ui.equals("View")) {
+                    getInput(ui, false);
+
                 }
-                toBankServer.flush();
-                toCentralServer.flush();
             }
 
+//            try{
+//                Message toBank = new Message(userName);
+//                Message toCentral = new Message(userName);
+//
+//                setName(userName);
+//
+//                toBankServer.writeObject(toBank);
+//                toCentralServer.writeObject(toCentral);
+//            }
+//            catch(IOException e){
+//
+//            }
 
-            System.out.print("House: NAME & AMOUNT ");
-
-            //System.out.println("Your account number is " + accountNum);
 
 
-            /** Closing all the resources */
-            toBankServer.close();
-            fromBankServer.close();
-            toCentralServer.close();
-            fromCentralServer.close();
 
-            in.close();
-            bankSocket.close();
 
-        } catch (Exception e) {
+
+
+
+            //BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+
+
+
+
+
+
+//            while (true) {
+//
+//
+//
+//
+//            }
+
+
+
+//            boolean flag = false;
+//            String ui;
+//            while (true) {
+//                ui = stdin.readLine();
+//                //serverOut.writeBytes(ui + '\n');
+//                if ("q".equals(ui))break;
+//                if (ui.equals("Make Account")) {
+//
+//                        Message send = new Message();
+//                        String info;
+//                        System.out.println("Please Enter Name: ");
+//
+//                       while ((info = stdin.readLine()) != null && !flag) {
+//                            send.username = info;
+//                            send.newAccount = true;
+//                            if (send.hasNewAccountInfo()) flag = true;
+//                            toBankServer.writeObject(send);
+//                            System.out.println(((Message)fromBankServer.readObject()).getMessage());
+//
+//                        }
+//                    System.out.println("EXITED THIS LOOP");
+//
+//                    }
+//
+//
+//                if (ui.equalsIgnoreCase("View Bidding Houses")) {
+//                    Message send = new Message();
+//                    send.viewAuctionHouses = true;
+//                    toCentralServer.writeObject(send);
+//                    System.out.println(((Message)fromCentralServer.readObject()).askForList);
+//                }
+//
+//
+//                toBankServer.reset();
+//                toCentralServer.reset();
+//                flag = false;
+//
+//
+//            }
+
+//            toBankServer.close();
+//            fromBankServer.close();
+//            toCentralServer.close();
+//            fromCentralServer.close();
+//            bankSocket.close();
+//            centralSocket.close();
+
+       //     }
+        }
+
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void printOptions(){
-        if(accountName.equals("")){
-            System.out.println("Options: View Bidding Houses (v) / Make Account (m) ");
-        }else if(!registered){
-            System.out.println("Options: View Bidding Houses (v) / Register with Auction Central (r)");
-        } else if(canBid){
-            System.out.println("Options: View Bidding Houses (v) / Place Bid (p)");
-        }else {
-            System.out.println("Options: View Bidding Houses (v) / Select House (s)");
+   class ListenFromServer extends Thread {
+
+        public void run() {
+
+            while(true) {
+
+                try {
+
+
+                    Message central = (Message) fromCentralServer.readObject();
+
+                    if (central != null) {
+                        System.out.println("Central > " + central.message);
+
+                    }
+
+
+                }
+
+                catch(IOException e) {
+
+                }
+
+
+
+                catch(ClassNotFoundException e2) {
+
+                }
+
+            }
+
         }
+
     }
 
-
-
 }
+
+
+
+
+
+

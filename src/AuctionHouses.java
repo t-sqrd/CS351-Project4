@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class AuctionHouses extends Thread {
 
-    private int CENTRAL_PORT = 4200;
+    private int CENTRAL_PORT = 8081;
     private int PORT_NUMBER = 4200;
     private String host = "127.0.0.1";
     private Map<String, Double> items = new HashMap<>();
@@ -61,6 +61,7 @@ public class AuctionHouses extends Thread {
 
                 centralSocket = new Socket(host, CENTRAL_PORT);
 
+
                 toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
                 fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
@@ -75,30 +76,31 @@ public class AuctionHouses extends Thread {
 
 
             Message request;
-            while ((request = (Message) fromCentralServer.readObject()) != null) {
 
-                System.out.println("In loop");
+//            toCentralServer.writeInt(1);
+            Message myName = new Message();
+            myName.username = "House";
+            toCentralServer.writeObject(myName);
+            toCentralServer.flush();
 
+                while ((request = (Message) fromCentralServer.readObject()) != null) {
+
+                    System.out.println("In loop");
+
+                    System.out.println(request.message);
 //
-                if (request.askForList) {
-                Message response = new Message();
-                response.message = "yeettt";
-                response.fromHouse = true;
-                toCentralServer.writeObject(response);
+                    if (request.askForList) {
+                        Message response = new Message();
+                        response.message = "yeettt";
+                        response.fromHouse = true;
+                        toCentralServer.writeObject(response);
+
                 }
             }
 
-
-                //}
-
-
-
-
-
-                fromCentralServer.close();
-                toCentralServer.close();
-                centralSocket.close();
-
+//                fromCentralServer.close();
+//                toCentralServer.close();
+//                centralSocket.close();
 
 
 

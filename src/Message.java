@@ -9,28 +9,29 @@ public class Message implements Serializable {
     private static final long serialVersionUID = -5399605122490343339L;
 
     String username;
-    Integer accountNum;
+    String accountNum;
     String balance;
-    String ip;
-    Integer bid;
     boolean newAccount;
     boolean viewAuctionHouses;
-    boolean selectHouse;
-    boolean register;
-    boolean HOME;
-    boolean addItems;
-    boolean addAgent;
-    boolean placeBid;
+
+    boolean askForList;
+    boolean fromHouse;
     String destination;
-    public HashMap<String, Integer> items = new HashMap<>();
     String message;
+    ArrayList<String> list;
 
-    private ArrayList<String> itemList = new ArrayList<>();
 
+    public Message(){}
 
-    public Message(){
+    public Message(String message){
 
+        username = message;
     }
+
+    public String getMessage(){
+        return message;
+    }
+
 
 
     public String printInfo(){
@@ -41,34 +42,13 @@ public class Message implements Serializable {
 
     }
 
-    public String getMessage(){
-
-        return "From Server: " + message;
-    }
-
-    public void setAuctionItems(ArrayList<String> items){
-        this.itemList = items;
-    }
-
-    public String getItemList(){
-        return itemList.get(0);
-    }
-
-    public Integer getAccountNum(){
-        return accountNum;
+    public int getAccountNum(){
+        return Integer.getInteger(accountNum);
     }
 
     public boolean hasNewAccountInfo(){
         return (username != null);
     }
-
-
-
-
-
-
-
-
 
 
 
