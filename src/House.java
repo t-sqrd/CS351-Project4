@@ -1,5 +1,7 @@
-import java.util.ArrayList;
-
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 /**
  * Created by BeauKujath on 02/12/2017.
  */
@@ -7,10 +9,10 @@ public class House
 {
 
     private String userName;
-    private ArrayList<String> items;
+    private HashMap<String, Integer> items = new HashMap<>();
 
 
-    public House(String userName, ArrayList<String> items)
+    public House(String userName, HashMap<String, Integer> items)
     {
         this.userName = userName;
         this.items = items;
@@ -20,20 +22,40 @@ public class House
         return userName;
     }
 
-    public void addItems(ArrayList<String> newItems){
-        for(int j = 0; j < newItems.size(); j ++){
-            String item = newItems.get(j);
-            if(!items.contains(item)){
-                items.add(item);
+    public void addItems(HashMap<String, Integer> newItems){
+        Iterator entries = newItems.entrySet().iterator();
+        while (entries.hasNext()) {
+            Entry thisEntry = (Map.Entry) entries.next();
+            String key = (String)thisEntry.getKey();
+            Integer price = (Integer)thisEntry.getValue();
+            if(!items.containsKey(key)){
+                items.put(key, price);
             }
         }
     }
 
+    public Boolean placeBid(String item, Integer bid){
+        if(items.containsKey(item)){
+            Integer old = items.get(item);
+            items.replace(item, old, bid);
+            System.out.println("successfully placed new bid");
+            return  true;
+        }
+        return false;
+    }
+
+
     public String getItemString(){
         String s = "";
-        s += "Items in " + userName + ":\n";
-        for(int i = 0; i < items.size(); i ++){
-            s += items.get(i) + "\n";
+        s += "\nItems in " + userName + ":\n";
+        int count = 1;
+        Iterator entries = items.entrySet().iterator();
+        while (entries.hasNext()) {
+            Entry thisEntry = (Map.Entry) entries.next();
+            String key = (String)thisEntry.getKey();
+            Integer price = (Integer)thisEntry.getValue();
+            s += count + ".) " + key + " -> " + price + "\n";
+            count++;
         }
         return s;
     }

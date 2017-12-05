@@ -8,12 +8,19 @@ public class Agent extends Thread {
     private String initBid;
     private int BANK_PORT = 8080;
     private int CENTRAL_PORT = 8081;
+    private String accountName = "";
+    private Integer accountNum;
     private String host;
     public volatile boolean bidding = false;
     private volatile boolean creatingAccount = false;
     private ArrayList<String> userInfo = new ArrayList<>();
     public String myAccountNum = "";
+
     private Encrypt encrypt;
+    private Boolean registered = false;
+    private Boolean canBid = false;
+    private String housePicked = "";
+
 
 
 
@@ -88,9 +95,6 @@ public class Agent extends Thread {
                 fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
 
-
-
-
             } catch (UnknownHostException e) {
                 System.err.println("Unknown host: " + host);
                 System.exit(1);
@@ -99,53 +103,97 @@ public class Agent extends Thread {
                 System.exit(1);
             }
 
-            System.out.println("Options : Make Account / View Bidding Houses ");
             System.out.println("To return to main menu type HOME ");
+            System.out.println("Options : Make Account (m) / View Bidding Houses (v)");
 
             BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-            boolean flag = false;
-            String ui;
 
             String request;
             Boolean accountInput = false;
             Boolean clientInput = false;
+            Boolean bidInput = false;
 
             while((request = stdin.readLine()) != null){
-                System.out.println("Message received: " + request);
+                //System.out.println("Message sent: " + request);
+
+
                 if(accountInput){
                     Message send = new Message();
                     send.username = request;
+                    accountName = request;
                     send.newAccount = true;
                     accountInput = false;
                     toBankServer.writeObject(send);
-                    System.out.println(((Message)fromBankServer.readObject()).getMessage());
-                    System.out.println("\nOptions: View Bidding Houses");
+                    Message m = (Message)fromBankServer.readObject();
+                    accountNum = m.accountNum;
+                    System.out.println(m.getMessage());
+                    printOptions();
                 }
                 if (clientInput){
                     System.out.println("client you chose from list: " + request);
+                    housePicked = request;
                     Message send = new Message();
                     send.message = request;
                     send.selectHouse = true;
                     clientInput = false;
+                    canBid = true;
                     toCentralServer.writeObject(send);
                     System.out.println(((Message)fromCentralServer.readObject()).getMessage());
-                    System.out.println("Options: Select House / View Bidding Houses");
+                    printOptions();
                 }
-
-                if(request.equals("Make Account")){
+                if (bidInput){
+                    System.out.println("you chose item: " + request);
+                    Message send = new Message();
+                    send.message = request;
+                    send.username = housePicked;
+                    send.bid = 10;
+                    send.placeBid = true;
+                    bidInput = false;
+                    toCentralServer.writeObject(send);
+                    Message response = (Message)fromCentralServer.readObject();
+                    System.out.println(response.getMessage());
+                    System.out.println("should i tell the bank to bid? " + response.placeBid);
+                    Message bankSend = new Message();
+                    bankSend.message = "Hey we gonna put a hold on some cash of " + send.bid;
+                    bankSend.placeBid = true;
+                    bankSend.bid = 10;
+                    bankSend.username = accountName;
+                    bankSend.accountNum = accountNum;
+                    toBankServer.writeObject(bankSend);
+                    Message bankResponse = (Message)fromBankServer.readObject();
+                    System.out.println(bankResponse.getMessage());
+                    printOptions();
+                }
+                if(request.equals("Make Account") || request.equals("m")){
                     System.out.println("Please Enter Name: ");
                     accountInput = true;
-
                 }
-                if(request.equals("View Bidding Houses")){
+                if(request.equals("Register with Auction Central") || request.equals("r")){
+                    System.out.println("Registering with auction central...");
+                    registered = true;
+                    Message send = new Message();
+                    //send.message = accountKey;
+                    send.username = accountName;
+                    send.addAgent = true;
+                    toCentralServer.writeObject(send);
+                    System.out.println(((Message)fromCentralServer.readObject()).getMessage());
+                    //System.out.println("Options: Select House (s) / View Bidding Houses (v)");
+                    printOptions();
+                }
+                if(request.equals("View Bidding Houses") || request.equals("v")){
                     Message send = new Message();
                     send.viewAuctionHouses = true;
                     toCentralServer.writeObject(send);
                     System.out.println(((Message)fromCentralServer.readObject()).getMessage());
-                    System.out.println("Options: Select House / View Bidding Houses");
+                    //System.out.println("Options: Select House (s) / View Bidding Houses (v)");
+                    printOptions();
                 }
 
-                if(request.equals("Select House")){
+                if(request.equals("Place Bid") || request.equals("p")){
+                    System.out.println("Select number of item to place bid on");
+                    bidInput = true;
+                }
+                if(request.equals("Select House") || request.equals("s")){
                     System.out.println("Choose a house from the list");
                     clientInput = true;
                 }
@@ -173,6 +221,17 @@ public class Agent extends Thread {
         }
     }
 
+    private void printOptions(){
+        if(accountName.equals("")){
+            System.out.println("Options: View Bidding Houses (v) / Make Account (m) ");
+        }else if(!registered){
+            System.out.println("Options: View Bidding Houses (v) / Register with Auction Central (r)");
+        } else if(canBid){
+            System.out.println("Options: View Bidding Houses (v) / Place Bid (p)");
+        }else {
+            System.out.println("Options: View Bidding Houses (v) / Select House (s)");
+        }
+    }
 
 
 

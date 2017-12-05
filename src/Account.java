@@ -1,8 +1,6 @@
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Random;
 
 public class Account extends HashMap{
@@ -17,7 +15,7 @@ public class Account extends HashMap{
     private BigInteger MY_PUBLIC_KEY;
     private BigInteger BANK_PUBLIC_KEY;
     private Integer clientNumber;
-    private double initialDeposit;
+    private int balance;
 
 
 
@@ -31,7 +29,8 @@ public class Account extends HashMap{
         this.encrypt = new Encrypt(clientNumber.toString());
         this.MY_PRIVATE_KEY = encrypt.getPrivate();
         this.MY_PUBLIC_KEY = encrypt.getPublic();
-        this.initialDeposit = 5.00;
+        int initialDeposit = 5;
+        this.balance = initialDeposit;
 
         System.out.println("Account has been created...");
 
@@ -57,14 +56,14 @@ public class Account extends HashMap{
                 clientName + ", " +
                 "Account Number = " + clientNumber + " , "
                 + "Your Public Key = " + MY_PUBLIC_KEY + " , "
-                + "Balance = " + initialDeposit + '\n';
+                + "Balance = " + balance + '\n';
 
         return packet;
 
     }
 
-    public void depositFunds(double amount){
-        initialDeposit += amount;
+    public void depositFunds(Integer amount){
+        balance += amount;
 
     }
 
@@ -81,6 +80,13 @@ public class Account extends HashMap{
         }
 
         return x;
+    }
+
+    public void placeHold(Integer bid){
+        System.out.println("bid is " + bid);
+        System.out.println("placed hold on account of bid value: " + bid.intValue());
+        balance -= bid;
+        System.out.println("account balance now is: " + balance);
     }
 
 

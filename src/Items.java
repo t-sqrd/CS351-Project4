@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -25,7 +24,7 @@ public class Items
         return single;
     }
 
-    public String addItems(String name, ArrayList<String> items){
+    public String addItems(String name, HashMap<String, Integer> items){
         String result = "";
         if(hasHouse(name)){
             getHouse(name).addItems(items);
@@ -59,9 +58,15 @@ public class Items
         return false;
     }
 
-    private House getHouse(String user){
+    public House getHouse(String user){
         return houses.get(user);
     }
+
+    public Boolean placeBid(String house, String item, Integer bid){
+        House h = houses.get(house);
+        return h.placeBid(item, bid);
+    }
+
 
     public String getClientString(){
         String s = "The Houses: \n";
@@ -73,7 +78,7 @@ public class Items
             s += "- " + key + "\n";
         }
         if(houses.size() == 0 ){
-            s = "No houses have been registered with Auction Central yet.";
+            s = "No houses have been registered with Auction Central yet.\n";
         }
         return s;
     }

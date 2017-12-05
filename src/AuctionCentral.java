@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Random;
 
 /**
@@ -11,6 +12,8 @@ public class AuctionCentral extends Thread {
 
     public static final int PORT_NUMBER = 8081;
     private Items itemList;
+    private ArrayList<String> agents = new ArrayList<>();
+    private ArrayList<String> bids = new ArrayList<>();
 
 
     public AuctionCentral(Socket socket) {
@@ -48,6 +51,13 @@ public class AuctionCentral extends Thread {
                    toBank.flush();
                    toBank.reset();
                }
+               if(request.addAgent){
+                   response = new Message();
+                   response.message = addAgent(request.message, request.username);
+                   toBank.writeObject(response);
+                   toBank.flush();
+                   toBank.reset();
+               }
                // An agent is selecting the house they
                // would like to see the items of
                if(request.selectHouse){
@@ -61,7 +71,7 @@ public class AuctionCentral extends Thread {
                }
                if(request.register){
                    response = new Message();
-                   response.message = "You successfully registered with auction central";
+                   response.message = "You successfully registered with auction central as " + request.username;
                    System.out.println("new auction items: " + request.items);
                    /*
                    When a AuctionHouse sends a 'Register' message to AuctionCentral
@@ -84,6 +94,21 @@ public class AuctionCentral extends Thread {
                    toBank.writeObject(response);
                    toBank.flush();
                    toBank.reset();
+               }
+
+               if(request.placeBid){
+                   Boolean result = itemList.placeBid(request.username, request.message, request.bid);
+                   response = new Message();
+                   if(result){
+                       response.message = "We placed a bid on " + request.username;
+                   }else{
+                       response.message = "Unable to place a bid on " + request.username;
+                   }
+                   response.placeBid = true;
+                   toBank.writeObject(response);
+                   toBank.flush();
+                   toBank.reset();
+                   System.out.println("should put a hold on the bank now");
                }
 
             }
@@ -155,6 +180,12 @@ public class AuctionCentral extends Thread {
                 ex.printStackTrace();
             }
         }
+    }
+
+    private String addAgent(String banKey, String name){
+        agents.add(name);
+
+        return "Successfully registered with auction central.\nYour bidding key is: @";
     }
 
 

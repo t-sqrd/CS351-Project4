@@ -2,9 +2,7 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by alexschmidt-gonzales on 11/19/17.
@@ -17,7 +15,7 @@ public class Bank extends Thread {
     private Socket socket;
     private Socket auctionSocket;
     private final int MAX_ACCOUNTS = 10000;
-    private static HashMap<Integer, Account> listOfAccountNums = new HashMap<>();
+    private HashMap<Integer, Account> listOfAccountNums = new HashMap<>();
     private String clientName;
     private Account account;
     public static final int PORT_NUMBER = 8080;
@@ -57,7 +55,9 @@ public class Bank extends Thread {
                     response = new Message();
                     Account account = new Account(request.username);
                     bankMap.put(account.getAccountNumber(), account);
+                    System.out.println("added to bank map : " + account.getAccountNumber());
                     response.message = account.returnPackage();
+                    response.accountNum = account.getAccountNumber();
                     toClient.writeObject(response);
                 }
 
@@ -65,6 +65,19 @@ public class Bank extends Thread {
                     response = new Message();
                     toClient.writeObject(response);
 
+                }
+
+                if(request.placeBid){
+                    System.out.println("Message from agent: " + request.message);
+                    System.out.println("place a lock on this account balance " + request.accountNum);
+                    Boolean result = holdAccount(request.accountNum, request.bid);
+                    response = new Message();
+                    if(result){
+                        response.message = "Successfully placed a hold on the account of " + request.bid;
+                    } else {
+                        response.message = "Unable to place a hold on the account of " + request.bid;
+                    }
+                    toClient.writeObject(response);
                 }
 
 
@@ -188,6 +201,23 @@ public class Bank extends Thread {
                 ex.printStackTrace();
             }
         }
+    }
+
+
+    private Boolean holdAccount(Integer accountNum, Integer bid){
+        Iterator entries = bankMap.entrySet().iterator();
+        System.out.println("size of list accounts: " + bankMap.size());
+        while (entries.hasNext()) {
+            Map.Entry thisEntry = (Map.Entry) entries.next();
+            Integer key = (Integer) thisEntry.getKey();
+            if(key.equals(accountNum)){
+                Account a = bankMap.get(key);
+                a.placeHold(bid);
+                return true;
+            }
+
+        }
+        return false;
     }
 
 
