@@ -188,18 +188,28 @@ public class AuctionCentral extends Thread {
                     if((request  = (Message)fromClient.readObject()) != null){
                         sendlist = request.askForList;
                         selectHouse = request.selectHouse;
-                        System.out.println(request.message);
-
+                        if(request.fromHouse){
+                            for(ClientThreads t : threads){
+                                if(t.myName.equals(request.agentName)){
+                                    t.agentBroadcast(request.message);
+                                }
+                            }
+                        }
 
                     }
+
+
 
                     if (sendlist) {
                         sendHouseList();
                     }
 
                     if(selectHouse){
-                        String house = request.message;
-                        getHouse(house);
+                        formCommunication(this.myName, request.message);
+//                        String house = request.message;
+//                        Message agent = new Message();
+//                        agent.agentName = this.myName;
+//                        getHouse(house);
 
                     }
 
@@ -229,6 +239,17 @@ public class AuctionCentral extends Thread {
                 }
             }
 
+        }
+
+        private void formCommunication(String agent, String house){
+            Message msg = new Message();
+            for(ClientThreads t : threads){
+                if(t.myName.equals(house)){
+                    msg.agentName = agent;
+                    msg.getItems = true;
+                    t.houseBroadcast(msg);
+                }
+            }
         }
 
         private void newHouseListener(boolean newHouse){

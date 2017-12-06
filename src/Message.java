@@ -19,7 +19,7 @@ public class Message implements Serializable {
     boolean newHouse;
     boolean selectHouse;
     boolean getItems;
-    String message;
+    String message, agentName;
     ArrayList<String> list;
 
 

@@ -92,6 +92,8 @@ public class AuctionHouses extends Thread {
 //
                     if (request.getItems) {
                         Message response = new Message();
+                        response.agentName = request.agentName;
+                        response.fromHouse = true;
                         response.message = "LIST : ITEM A, ITEM B, ITEM C";
                         toCentralServer.writeObject(response);
 
