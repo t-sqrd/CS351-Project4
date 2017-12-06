@@ -21,68 +21,70 @@ public class Bank extends Thread {
     private String clientName;
     private Account account;
 
-    //public static ArrayList<ClientThreads> threads = new ArrayList<>();
-
     private Socket auctionSocket;
     public static final int PORT_NUMBER = 8080;
     public static final int AUCTION_CENTRAL_PORT = 8081;
+
+    ObjectInputStream fromClient;
+    ObjectOutputStream toClient;
+
     String host = "127.0.0.1";
 
     public Bank(Socket socket) {
         this.socket = socket;
+
+        try {
+            toClient = new ObjectOutputStream(socket.getOutputStream());
+            fromClient = new ObjectInputStream(socket.getInputStream());
+        } catch (IOException e) {
+
+        }
 
         start();
 
     }
 
     public void run() {
-        InputStream agentIn = null;
-        OutputStream bankOut = null;
-
-        ObjectOutputStream toClient = null;
-        ObjectInputStream fromClient = null;
-
 
         try {
 
-            bankOut = socket.getOutputStream();
-            agentIn = socket.getInputStream();
-
-
-            toClient = new ObjectOutputStream(bankOut);
-            fromClient = new ObjectInputStream(agentIn);
 
             Message request;
             Message response;
 
+            try {
+//
                 while ((request = (Message) fromClient.readObject()) != null) {
 
-                    response = new Message();
-                    request.message = "In Bank";
-                    toClient.writeObject(request);
 
                     if (request.newAccount) {
                         response = new Message();
                         Account account = new Account(request.username);
                         bankMap.put(account.getAccountNumber(), account);
                         response.message = account.returnPackage();
-                        toClient.writeObject(response);}
+                        sendMessage(response);
+                    }
+                    if (request.KILL) {
+                        response = new Message();
+                        response.message = "Goodbye...";
+                        sendMessage(response);
+                        break;
+                    }
+                }
+            } catch (ClassNotFoundException ex) {
 
+            } catch (IOException ex) {
+
+                System.out.println("Unable to get streams from client in bank server");
 
             }
 
 
-        } catch (ClassNotFoundException ex) {
-            System.err.print(ex.getCause());
-
-        } catch (IOException ex) {
-
-            System.err.print(ex.getCause());
-            System.out.println("Unable to get streams from client in bank server");
         } finally {
             try {
-                agentIn.close();
-                bankOut.close();
+                System.out.println("Agent exiting...");
+                toClient.close();
+                fromClient.close();
                 socket.close();
 
             } catch (IOException ex) {
@@ -90,7 +92,15 @@ public class Bank extends Thread {
             }
         }
 
+    }
 
+    private void sendMessage(Message msg) {
+        try {
+            toClient.writeObject(msg);
+            toClient.flush();
+        } catch (IOException e) {
+
+        }
     }
 
 
@@ -112,30 +122,6 @@ public class Bank extends Thread {
 
     }
 
-    public void establishConnection() {
-        System.out.println("On port " + PORT_NUMBER);
-        ServerSocket server = null;
-        try {
-            server = new ServerSocket(PORT_NUMBER);
-
-            while (true) {
-
-                new Bank(server.accept());
-
-            }
-
-        } catch (IOException ex) {
-            System.out.println("Unable to start Banking server.");
-        } finally {
-            try {
-                if (server != null)
-                    server.close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
-
 
     public static void main(String[] args) {
         System.out.println("Banking Server connected...");
@@ -151,6 +137,7 @@ public class Bank extends Thread {
 //                t.start();
                 new Bank(server.accept());
 
+
             }
 
         } catch (IOException ex) {
@@ -164,5 +151,4 @@ public class Bank extends Thread {
             }
         }
     }
-
 }

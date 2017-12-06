@@ -12,7 +12,7 @@ public class AuctionCentral extends Thread {
     Socket houseSocket;
 
     public static final int CENTER_PORT = 8081;
-    public static final int HOUSE_PORT =  4200;
+    public static final int HOUSE_PORT = 4200;
     public final int HOUSE_PORT2 = 4201;
     public String host = "127.0.0.1";
     private String list;
@@ -25,9 +25,8 @@ public class AuctionCentral extends Thread {
     public static ArrayList<ClientThreads> threads = new ArrayList<>();
 
 
-
     public AuctionCentral(Socket socket) {
-       this.agentSocket = socket;
+        this.agentSocket = socket;
         start();
 
     }
@@ -47,7 +46,6 @@ public class AuctionCentral extends Thread {
 
             Message request;
             Message reponse;
-
 
 
 //            while ((request = (Message)fromAgent.readObject()) != null ) {
@@ -72,9 +70,7 @@ public class AuctionCentral extends Thread {
 //
 //            }
 
-        }
-
-        catch (IOException e) {
+        } catch (IOException e) {
 
             System.out.println("Unable to get streams from client in Server 2");
         }
@@ -92,14 +88,12 @@ public class AuctionCentral extends Thread {
                 agentSocket.close();
 
 
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
 
                 ex.printStackTrace();
             }
         }
     }
-
 
 
     public static void main(String[] args) {
@@ -122,18 +116,13 @@ public class AuctionCentral extends Thread {
             }
 
 
-        }
-
-        catch (IOException ex) {
+        } catch (IOException ex) {
             System.out.println("Unable to start Auction Central.");
-        }
-        finally {
+        } finally {
             try {
                 if (fromAgent != null) fromAgent.close();
 
-            }
-
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 ex.printStackTrace();
             }
         }
@@ -144,9 +133,10 @@ public class AuctionCentral extends Thread {
         ObjectOutputStream toClient;
         ObjectInputStream fromClient;
         boolean sendlist, newHouse, selectHouse;
+        boolean housesAvailable;
+        volatile boolean KILL = false;
         String myName;
         Message init;
-
 
 
         public ClientThreads(Socket socket) {
@@ -157,83 +147,105 @@ public class AuctionCentral extends Thread {
                 toClient = new ObjectOutputStream(socket.getOutputStream());
                 fromClient = new ObjectInputStream(socket.getInputStream());
 
-                Message user = (Message)fromClient.readObject();
+                Message user = (Message) fromClient.readObject();
                 this.myName = user.username;
                 this.newHouse = user.newHouse;
 
 
             } catch (IOException e) {
 
-            }
-            catch(ClassNotFoundException e){
+            } catch (ClassNotFoundException e) {
 
             }
 
 
         }
-
 
 
         public void run() {
 
-            while (true) {
+           try {
+               while (!KILL) {
 
+                   try {
+
+
+                       nameClients();
+                       newHouseListener(newHouse);
+                       newHouse = false;
+
+                       Message request;
+                       if ((request = (Message) fromClient.readObject()) != null) {
+
+                           sendlist = request.askForList;
+                           selectHouse = request.selectHouse;
+                           KILL = request.KILL;
+                           System.out.println(request.KILL);
+
+                           if (request.fromHouse) {
+                               for (ClientThreads t : threads) {
+                                   if (t.myName.equals(request.agentName)) {
+                                       t.agentBroadcast(request.message);
+                                   }
+                               }
+                           }
+
+                       }
+
+                       if (sendlist) sendHouseList();
+
+                       if (selectHouse && housesAvailable) {
+                           if (request != null) formCommunication(this.myName, request.message);
+                       } else if (selectHouse && !housesAvailable) {
+                           agentBroadcast("There are no houses available...");
+                       }
+
+                   } catch (IOException e) {
+
+
+                   } catch (ClassNotFoundException e) {
+
+
+                   }
+
+                   try {
+                       sleep(500);
+                   } catch (InterruptedException e) {
+
+                   }
+               }
+           }
+
+
+
+//
+            finally {
                 try {
 
-                    nameClients();
-                    newHouseListener(newHouse);
-                    newHouse = false;
-
-                    Message request;
-                    if((request  = (Message)fromClient.readObject()) != null){
-                        sendlist = request.askForList;
-                        selectHouse = request.selectHouse;
-                        if(request.fromHouse){
-                            for(ClientThreads t : threads){
-                                if(t.myName.equals(request.agentName)){
-                                    t.agentBroadcast(request.message);
-                                }
-                            }
-                        }
-
-                    }
+                    System.out.println("Exiting this client...");
+                    threads.remove(this);
+                    fromClient.close();
+                    toClient.close();
+                    socket.close();
 
 
-
-                    if (sendlist) {
-                        sendHouseList();
-                    }
-
-                    if(selectHouse){
-                        formCommunication(this.myName, request.message);
-//                        String house = request.message;
-//                        Message agent = new Message();
-//                        agent.agentName = this.myName;
-//                        getHouse(house);
-
-                    }
-
-                    remove();
-
-                }
-
-                catch (IOException e) {
-                }
-
-                catch(ClassNotFoundException e){
-
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
 
             }
+
         }
 
-        private void nameClients(){
-            for(int i = 0; i < threads.size(); i++){
+
+
+        private void nameClients() {
+            for (int i = 0; i < threads.size(); i++) {
                 ClientThreads t = threads.get(i);
-                if(t.myName.equals("House")){
+                if (t.myName.equals("House")) {
                     t.myName = "House " + houseId++;
                 }
-                if(t.myName.equals("Agent")){
+                if (t.myName.equals("Agent")) {
                     t.myName = "Agent " + agentId++;
 
                 }
@@ -241,10 +253,12 @@ public class AuctionCentral extends Thread {
 
         }
 
-        private void formCommunication(String agent, String house){
+
+
+        private void formCommunication(String agent, String house) {
             Message msg = new Message();
-            for(ClientThreads t : threads){
-                if(t.myName.equals(house)){
+            for (ClientThreads t : threads) {
+                if (t.myName.equals(house)) {
                     msg.agentName = agent;
                     msg.getItems = true;
                     t.houseBroadcast(msg);
@@ -252,12 +266,13 @@ public class AuctionCentral extends Thread {
             }
         }
 
-        private void newHouseListener(boolean newHouse){
-            if(newHouse){
-                for(int i = 0; i < threads.size(); i++){
+        private void newHouseListener(boolean newHouse) {
+            if (newHouse) {
+                for (int i = 0; i < threads.size(); i++) {
                     ClientThreads t = threads.get(i);
-                    if(t.myName.contains("Agent")){
+                    if (t.myName.contains("Agent")) {
                         t.agentBroadcast("New AuctionHouse has entered! -> " + this.myName);
+                        housesAvailable = true;
                     }
                 }
             }
@@ -265,67 +280,64 @@ public class AuctionCentral extends Thread {
         }
 
 
-        private void agentBroadcast(String msg){
+        private void agentBroadcast(String msg) {
             try {
                 Message x = new Message();
                 x.message = msg;
                 toClient.writeObject(x);
                 toClient.flush();
-            }
-            catch (IOException e){
+            } catch (IOException e) {
+                e.printStackTrace();
 
             }
         }
 
-        private void houseBroadcast(Message msg){
-            try{
+        private void houseBroadcast(Message msg) {
+            try {
                 toClient.writeObject(msg);
                 toClient.flush();
-            }
-            catch(IOException e){
-
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 
-        private void sendHouseList(){
+        private void sendHouseList() {
+            boolean hasHouse = false;
             if (!threads.isEmpty()) {
                 for (ClientThreads t : threads) {
                     System.out.println("USER = " + t.myName + " " + t);
+
                     if (!t.equals(this) && t.myName.contains("House") && t.isAlive()) {
                         agentBroadcast("All houses online  " + t.myName);
-                    } else if (!t.equals(this) && (t.myName.contains("Agent") && !t.myName.contains("House"))) {
-                        String msg = "No Auction Houses are online right now";
-                        agentBroadcast(msg);
+                        hasHouse = true;
+                        housesAvailable = true;
+
                     }
                 }
-            }
-
-        }
-
-        private void getHouse(String house){
-            for(ClientThreads t : threads){
-                if(t.myName.equals(house)){
-                    Message msg = new Message();
-                    msg.getItems = true;
-                    t.houseBroadcast(msg);
-
+                System.out.println("------------------");
+                if (!hasHouse) {
+                    String msg = "No Auction Houses are online right now";
+                    housesAvailable = false;
+                    agentBroadcast(msg);
                 }
             }
+
         }
 
-        private void remove(){
-            for(ClientThreads t : threads){
-                if(!t.isAlive()){
-                    System.out.println(t.myName);
 
+        private void remove() {
+            for (ClientThreads t : threads) {
+                if (!t.isAlive()) {
+                    System.out.println("DEAD THREAD -> " + t.myName);
                     threads.remove(t);
                     try {
                         t.toClient.close();
                         t.fromClient.close();
                         t.socket.close();
                     }
-                    catch(IOException e){
 
+                    catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
             }

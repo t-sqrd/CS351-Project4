@@ -32,17 +32,6 @@ public class AuctionHouses extends Thread {
 
 
 
-    private String makeList() {
-
-        String l = "";
-        for (int i = 0; i < items1.length; i++) {
-            l += items1[i];
-            System.out.println(l);
-        }
-        System.out.println(l);
-        return l;
-    }
-
     public void init() {
         try {
 
@@ -96,7 +85,6 @@ public class AuctionHouses extends Thread {
                         response.fromHouse = true;
                         response.message = "LIST : ITEM A, ITEM B, ITEM C";
                         toCentralServer.writeObject(response);
-
                 }
             }
 
