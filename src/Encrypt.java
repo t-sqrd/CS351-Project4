@@ -57,7 +57,7 @@ public class Encrypt {
 
         for(int i = 0; i < message.length(); i++){
             //temp += Integer.toString(message.codePointAt(i));
-             temp += Integer.toString(message.codePointAt(i));
+            temp += Integer.toString(message.codePointAt(i));
         }
     }
 
