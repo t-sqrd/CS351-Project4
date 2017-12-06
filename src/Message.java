@@ -10,10 +10,12 @@ public class Message implements Serializable {
     String username;
     String accountNum;
     String balance;
+    String agentName;
     boolean newAccount;
     boolean viewAuctionHouses;
+    volatile boolean KILL;
 
-    boolean askForList;
+    boolean askForList, getItems;
     boolean fromHouse;
     boolean selectHouse;
     boolean addAgent;
