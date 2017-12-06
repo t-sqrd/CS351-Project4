@@ -25,6 +25,8 @@ public class Agent extends Thread {
     ObjectInputStream fromBankServer;
      ObjectInputStream fromCentralServer;
 
+    BufferedReader stdin;
+
     public static  volatile boolean changeServer;
 
 
@@ -48,38 +50,24 @@ public class Agent extends Thread {
 
 
 
-    public void getInput(String m, boolean routeToBank){
+    private void sendMsgToCentral(Message msg){
         try{
-
-
-
-
-            if(routeToBank){
-                Message bank = new Message();
-                bank.message = m;
-
-                toBankServer.writeObject(bank);
-                toBankServer.flush();
-
-                System.out.println("From Bank = " + fromBankServer.readObject());
-            }
-            if(!routeToBank){
-
-                Message central = new Message();
-                central.message = m;
-
-                central.username = "Agent";
-                central.askForList = true;
-                toCentralServer.writeObject(central);
-                toCentralServer.flush();
-               // System.out.println("From Central = " + fromCentralServer.readObject());
-            }
+            toCentralServer.writeObject(msg);
+            toCentralServer.flush();
 
         }
         catch(IOException e){
 
         }
-        catch(ClassNotFoundException e){
+
+    }
+
+    private void sendMsgToBank(Message msg){
+        try {
+            toBankServer.writeObject(msg);
+            toBankServer.flush();
+        }
+        catch(IOException e){
 
         }
     }
@@ -107,6 +95,8 @@ public class Agent extends Thread {
                 toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
                 fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
+                stdin = new BufferedReader(new InputStreamReader(System.in));
+
 
 
 
@@ -119,46 +109,77 @@ public class Agent extends Thread {
                 System.exit(1);
             }
 
-            System.out.println("Options : Make Account / View Bidding Houses ");
+            System.out.println("Options : Make Account / View Houses ");
             System.out.println("To return to main menu typ HOME ");
 
-
-
-
-
             new ListenFromServer().start();
-            Scanner in = new Scanner(System.in);
+
 
             Message x = new Message();
             x.username = "Agent";
-            toCentralServer.writeObject(x);
+            sendMsgToCentral(x);
+            String ui;
+            Message msg;
+            Message request;
 
-            while(true){
+            while((ui = stdin.readLine()) != null){
 
 
-                String ui = in.nextLine();
-                if (ui.equals("Make")) {
-                    getInput(ui, true);
+                if(ui.equals("QUIT")){
+                    msg = new Message();
+                    msg.KILL = true;
+                    sendMsgToBank(msg);
+                    sendMsgToCentral(msg);
+                    break;
+                }
+
+                else if (ui.equals("Make Account")) {
+
+                    request = new Message();
+                    request.message = "Make";
+                    sendMsgToBank(request);
+
+
+                    System.out.println("From Bank = " + fromBankServer.readObject());
+
 
                 }
-                if (ui.equals("View")) {
-                    getInput(ui, false);
-
+                else if (ui.equals("View Houses")) {
+                    request = new Message();
+                    request.message = "View";
+                    //central.username = "Agent";
+                    request.askForList = true;
+                    sendMsgToCentral(request);
                 }
+
+                else if(ui.equals("Select House")){
+                    System.out.println("Please Enter House Number: ");
+                    request = new Message();
+                    while((ui = stdin.readLine()) != null){
+                        request.message = ui;
+                        request.selectHouse = true;
+                        sendMsgToCentral(request);
+                    }
+                }
+
+            }
+            try {
+                System.out.println("Logging out...");
+                sleep(1000);
+                toBankServer.close();
+                fromBankServer.close();
+                toCentralServer.close();
+                fromCentralServer.close();
+                bankSocket.close();
+                centralSocket.close();
+
+            }
+            catch(InterruptedException e){
+
             }
 
-//            try{
-//                Message toBank = new Message(userName);
-//                Message toCentral = new Message(userName);
-//
-//                setName(userName);
-//
-//                toBankServer.writeObject(toBank);
-//                toCentralServer.writeObject(toCentral);
-//            }
-//            catch(IOException e){
-//
-//            }
+
+
 
 
 

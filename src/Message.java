@@ -12,11 +12,13 @@ public class Message implements Serializable {
     String accountNum;
     String balance;
     boolean newAccount;
-    boolean viewAuctionHouses;
 
+    volatile boolean KILL;
     boolean askForList;
     boolean fromHouse;
-    String destination;
+    boolean newHouse;
+    boolean selectHouse;
+    boolean getItems;
     String message;
     ArrayList<String> list;
 

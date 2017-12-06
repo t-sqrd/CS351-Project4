@@ -80,6 +80,7 @@ public class AuctionHouses extends Thread {
 //            toCentralServer.writeInt(1);
             Message myName = new Message();
             myName.username = "House";
+            myName.newHouse = true;
             toCentralServer.writeObject(myName);
             toCentralServer.flush();
 
@@ -89,18 +90,17 @@ public class AuctionHouses extends Thread {
 
                     System.out.println(request.message);
 //
-                    if (request.askForList) {
+                    if (request.getItems) {
                         Message response = new Message();
-                        response.message = "yeettt";
-                        response.fromHouse = true;
+                        response.message = "LIST : ITEM A, ITEM B, ITEM C";
                         toCentralServer.writeObject(response);
 
                 }
             }
 
-//                fromCentralServer.close();
-//                toCentralServer.close();
-//                centralSocket.close();
+                fromCentralServer.close();
+                toCentralServer.close();
+                centralSocket.close();
 
 
 

@@ -18,8 +18,9 @@ public class AuctionCentral extends Thread {
     private String list;
     public static int count = 0;
     private int location;
-    public static int agentId = 0;
-    public static int houseId = 0;
+
+    public static int agentId = 1;
+    public static int houseId = 1;
 
     public static ArrayList<ClientThreads> threads = new ArrayList<>();
 
@@ -27,7 +28,6 @@ public class AuctionCentral extends Thread {
 
     public AuctionCentral(Socket socket) {
        this.agentSocket = socket;
-
         start();
 
     }
@@ -50,27 +50,27 @@ public class AuctionCentral extends Thread {
 
 
 
-            while ((request = (Message)fromAgent.readObject()) != null ) {
-                System.out.println("In Auction Central Server...");
-
-
-
-
-//                System.out.println(request.message);
-//                Message x  = new Message();
-//                x.message = "From Central";
-//                toAgent.writeObject(x);
-
-                if(request.viewAuctionHouses) {
-                    Message response = new Message();
-                    response.askForList = true;
-
-
-                }
-
-
-
-            }
+//            while ((request = (Message)fromAgent.readObject()) != null ) {
+//                System.out.println("In Auction Central Server...");
+//
+//
+//
+//
+////                System.out.println(request.message);
+////                Message x  = new Message();
+////                x.message = "From Central";
+////                toAgent.writeObject(x);
+//
+//                if(request.viewAuctionHouses) {
+//                    Message response = new Message();
+//                    response.askForList = true;
+//
+//
+//                }
+//
+//
+//
+//            }
 
         }
 
@@ -79,13 +79,14 @@ public class AuctionCentral extends Thread {
             System.out.println("Unable to get streams from client in Server 2");
         }
 
-        catch (ClassNotFoundException e) {
-        }
+//        catch (ClassNotFoundException e) {
+//        }
 
         finally {
             try {
 
 
+                threads.clear();
                 fromAgent.close();
                 toAgent.close();
                 agentSocket.close();
@@ -142,17 +143,14 @@ public class AuctionCentral extends Thread {
         Socket socket;
         ObjectOutputStream toClient;
         ObjectInputStream fromClient;
-        boolean sendlist;
-        String name;
+        boolean sendlist, newHouse, selectHouse;
         String myName;
         Message init;
-        int sort;
 
 
 
         public ClientThreads(Socket socket) {
             this.socket = socket;
-            ++agentId;
 
             try {
 
@@ -161,23 +159,8 @@ public class AuctionCentral extends Thread {
 
                 Message user = (Message)fromClient.readObject();
                 this.myName = user.username;
+                this.newHouse = user.newHouse;
 
-
-
-//                Message m = new Message();
-//                if(sort == 1){
-//                    System.out.println("Auction House Connected...");
-//                    this.username = "House " + agentId++;
-//                    m.username = username;
-//                    toClient.writeObject(m);
-//                }
-//                else if(sort == 2){
-//                    System.out.println("Agent connected...");
-//                    this.username = "Agent " + houseId++;
-//                    m.username = username;
-//                    toClient.writeObject(m);
-//
-//                }
 
             } catch (IOException e) {
 
@@ -197,46 +180,30 @@ public class AuctionCentral extends Thread {
 
                 try {
 
-
-                    for(int i = 0; i < threads.size(); i++){
-                        ClientThreads t = threads.get(i);
-                        if(t.myName.equals("House")){
-                            t.myName = "House " + houseId++;
-                        }
-                        else if(t.myName.equals("Agent")){
-                            t.myName = "Agent " + agentId++;
-
-                        }
-                    }
+                    nameClients();
+                    newHouseListener(newHouse);
+                    newHouse = false;
 
                     Message request;
                     if((request  = (Message)fromClient.readObject()) != null){
                         sendlist = request.askForList;
+                        selectHouse = request.selectHouse;
+                        System.out.println(request.message);
+
 
                     }
 
                     if (sendlist) {
+                        sendHouseList();
+                    }
 
-                        if (!threads.isEmpty()) {
-                            for (int i = 0; i < threads.size(); i++) {
-
-                                ClientThreads t = threads.get(i);
-                                System.out.println("USER = " + t.myName + " " + t);
-                                if (!t.equals(this) && t.myName.contains("House")) {
-                                    broadcast("All houses online : " + t.myName);
-                                }
-                            }
-                        }
-                        else {
-
-                            String msg = "No Auction Houses are online right now";
-                            broadcast(msg);
-
-                        }
+                    if(selectHouse){
+                        String house = request.message;
+                        getHouse(house);
 
                     }
 
-
+                    remove();
 
                 }
 
@@ -250,11 +217,35 @@ public class AuctionCentral extends Thread {
             }
         }
 
+        private void nameClients(){
+            for(int i = 0; i < threads.size(); i++){
+                ClientThreads t = threads.get(i);
+                if(t.myName.equals("House")){
+                    t.myName = "House " + houseId++;
+                }
+                if(t.myName.equals("Agent")){
+                    t.myName = "Agent " + agentId++;
 
-        private void broadcast(String msg){
+                }
+            }
+
+        }
+
+        private void newHouseListener(boolean newHouse){
+            if(newHouse){
+                for(int i = 0; i < threads.size(); i++){
+                    ClientThreads t = threads.get(i);
+                    if(t.myName.contains("Agent")){
+                        t.agentBroadcast("New AuctionHouse has entered! -> " + this.myName);
+                    }
+                }
+            }
+
+        }
+
+
+        private void agentBroadcast(String msg){
             try {
-
-
                 Message x = new Message();
                 x.message = msg;
                 toClient.writeObject(x);
@@ -265,6 +256,59 @@ public class AuctionCentral extends Thread {
             }
         }
 
+        private void houseBroadcast(Message msg){
+            try{
+                toClient.writeObject(msg);
+                toClient.flush();
+            }
+            catch(IOException e){
+
+            }
+        }
+
+        private void sendHouseList(){
+            if (!threads.isEmpty()) {
+                for (ClientThreads t : threads) {
+                    System.out.println("USER = " + t.myName + " " + t);
+                    if (!t.equals(this) && t.myName.contains("House") && t.isAlive()) {
+                        agentBroadcast("All houses online  " + t.myName);
+                    } else if (!t.equals(this) && (t.myName.contains("Agent") && !t.myName.contains("House"))) {
+                        String msg = "No Auction Houses are online right now";
+                        agentBroadcast(msg);
+                    }
+                }
+            }
+
+        }
+
+        private void getHouse(String house){
+            for(ClientThreads t : threads){
+                if(t.myName.equals(house)){
+                    Message msg = new Message();
+                    msg.getItems = true;
+                    t.houseBroadcast(msg);
+
+                }
+            }
+        }
+
+        private void remove(){
+            for(ClientThreads t : threads){
+                if(!t.isAlive()){
+                    System.out.println(t.myName);
+
+                    threads.remove(t);
+                    try {
+                        t.toClient.close();
+                        t.fromClient.close();
+                        t.socket.close();
+                    }
+                    catch(IOException e){
+
+                    }
+                }
+            }
+        }
     }
 }
 
