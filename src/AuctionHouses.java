@@ -2,11 +2,10 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -17,7 +16,7 @@ public class AuctionHouses extends Thread {
     private int CENTRAL_PORT = 8081;
     private int PORT_NUMBER = 4200;
     private String host = "127.0.0.1";
-    private Map<String, Double> items = new HashMap<>();
+    private HashMap<String, Integer> items = new HashMap<>();
     private String list;
 
     private String[] items1 = {"Shit , $1.00 \n", "Andrews gay ass, $0.25\n", "MoreShit, $7.00\n"};
@@ -77,32 +76,31 @@ public class AuctionHouses extends Thread {
 
             Message request;
 
-//            toCentralServer.writeInt(1);
             Message myName = new Message();
+            myName.message = "we a house";
             myName.username = "House";
             myName.newHouse = true;
             toCentralServer.writeObject(myName);
             toCentralServer.flush();
 
-                while ((request = (Message) fromCentralServer.readObject()) != null) {
+            while ((request = (Message) fromCentralServer.readObject()) != null) {
 
-                    System.out.println("In loop");
+                System.out.println("In loop");
 
-                    System.out.println(request.message);
+                System.out.println(request.message);
 //
-                    if (request.getItems) {
-                        Message response = new Message();
-                        response.agentName = request.agentName;
-                        response.fromHouse = true;
-                        response.message = "LIST : ITEM A, ITEM B, ITEM C";
-                        toCentralServer.writeObject(response);
+                if (request.askForList) {
+                    Message response = new Message();
+                    response.message = "yeettt";
+                    response.fromHouse = true;
+                    toCentralServer.writeObject(response);
 
                 }
             }
 
-                fromCentralServer.close();
-                toCentralServer.close();
-                centralSocket.close();
+//                fromCentralServer.close();
+//                toCentralServer.close();
+//                centralSocket.close();
 
 
 
@@ -110,6 +108,21 @@ public class AuctionHouses extends Thread {
             e.printStackTrace();
 
         }
+    }
+
+    public String getItemString(){
+        String s = "";
+        s += "\nItems in " + getName() + ":\n";
+        int count = 1;
+        Iterator entries = items.entrySet().iterator();
+        while (entries.hasNext()) {
+            Map.Entry thisEntry = (Map.Entry) entries.next();
+            String key = (String)thisEntry.getKey();
+            Integer price = (Integer)thisEntry.getValue();
+            s += count + ".) " + key + " -> " + price + "\n";
+            count ++;
+        }
+        return s;
     }
 }
 

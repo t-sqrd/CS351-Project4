@@ -2,7 +2,6 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
@@ -55,21 +54,35 @@ public class Bank extends Thread {
             Message request;
             Message response;
 
-                while ((request = (Message) fromClient.readObject()) != null) {
+            while ((request = (Message) fromClient.readObject()) != null) {
 
+                if (request.newAccount) {
                     response = new Message();
-                    request.message = "In Bank";
-                    toClient.writeObject(request);
-
-                    if (request.newAccount) {
-                        response = new Message();
-                        Account account = new Account(request.username);
-                        bankMap.put(account.getAccountNumber(), account);
-                        response.message = account.returnPackage();
-                        toClient.writeObject(response);}
-
+                    Account account = new Account(request.username);
+                    bankMap.put(account.getAccountNumber(), account);
+                    System.out.println("added to bank map : " + account.getAccountNumber());
+                    response.message = account.returnPackage();
+                    //response.accountNum = account.getAccountNumber();
+                    toClient.writeObject(response);
+                }
 
             }
+    /*
+
+
+                if(request.placeBid){
+                    System.out.println("Message from agent: " + request.message);
+                    System.out.println("place a lock on this account balance " + request.accountNum);
+                    Boolean result = holdAccount(request.accountNum, request.bid);
+                    response = new Message();
+                    if(result){
+                        response.message = "Successfully placed a hold on the account of " + request.bid;
+                    } else {
+                        response.message = "Unable to place a hold on the account of " + request.bid;
+                    }
+                    toClient.writeObject(response);
+                }
+            */
 
 
         } catch (ClassNotFoundException ex) {
