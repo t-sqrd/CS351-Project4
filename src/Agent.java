@@ -109,7 +109,7 @@ public class Agent extends Thread {
 
     public void run() {
 //
-       try {
+        try {
 
 
             System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
@@ -143,10 +143,6 @@ public class Agent extends Thread {
                 System.exit(1);
             }
 
-            System.out.println("Options : Make Account / View Houses ");
-            System.out.println("To return to main menu typ HOME ");
-
-
 
             Message myName = new Message();
             myName.username = "Agent";
@@ -156,7 +152,8 @@ public class Agent extends Thread {
             Message msg;
             Message request;
 
-
+            System.out.println("Options : Make Account / View Houses ");
+            System.out.println("To return to main menu typ HOME ");
 
             while((ui = stdin.readLine()) != null){
 
@@ -173,11 +170,10 @@ public class Agent extends Thread {
                 else if (ui.equals("Make Account")) {
                     System.out.println("Please enter your name:");
                     request = new Message();
-                    while((ui = stdin.readLine()) != null){
-                        request.newAccount = true;
-                        request.username = ui;
-                        sendMsgToBank(request);
-                    }
+                    request.newAccount = true;
+                    request.username = stdin.readLine();
+                    sendMsgToBank(request);
+
                 }
                 else if (ui.equals("View Houses")) {
                     request = new Message();
@@ -185,18 +181,14 @@ public class Agent extends Thread {
                     //central.username = "Agent";
                     request.askForList = true;
                     sendMsgToCentral(request);
-
                 }
 
                 else if(ui.equals("Select House")){
                     System.out.println("Please Enter House Number: ");
                     request = new Message();
-                    while((ui = stdin.readLine()) != null){
-                        request.message = ui;
-                        request.selectHouse = true;
-                        sendMsgToCentral(request);
-
-                    }
+                    request.message = ui;
+                    request.selectHouse = true;
+                    sendMsgToCentral(request);
                 }
 
 
@@ -225,15 +217,15 @@ public class Agent extends Thread {
 
 
 
-   class ListenFromServer extends Thread {
+    class ListenFromServer extends Thread {
 
-       ObjectInputStream fromServer;
-       String serverName;
+        ObjectInputStream fromServer;
+        String serverName;
 
-       public ListenFromServer(ObjectInputStream fromServer, String serverName){
-           this.fromServer = fromServer;
-           this.serverName = serverName;
-       }
+        public ListenFromServer(ObjectInputStream fromServer, String serverName){
+            this.fromServer = fromServer;
+            this.serverName = serverName;
+        }
 
         public void run() {
 
