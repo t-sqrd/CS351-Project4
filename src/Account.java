@@ -52,11 +52,9 @@ public class Account extends HashMap{
 
     public String returnPackage(){
 
-        String packet = "User = " +
-                clientName + ", " +
-                "Account Number = " + clientNumber + " , "
+        String packet = "User = " + clientName + ", " + "Account Number = " + clientNumber + " , "
                 + "Your Public Key = " + MY_PUBLIC_KEY + " , "
-                + "Balance = " + balance + '\n';
+                + "Balance = " + balance + "Bank Key '\n'";
 
         return packet;
 
@@ -71,6 +69,7 @@ public class Account extends HashMap{
         System.out.println("Public Key = " + encrypt.getPublic());
 
     }
+
 
     private int makeAccountNumber(){
         Random rand = new Random();
@@ -87,6 +86,12 @@ public class Account extends HashMap{
         System.out.println("placed hold on account of bid value: " + bid.intValue());
         balance -= bid;
         System.out.println("account balance now is: " + balance);
+    }
+
+    public int makeKey(){
+        Random rand = new Random();
+        int temp = rand.nextInt(50);
+        return temp;
     }
 
 

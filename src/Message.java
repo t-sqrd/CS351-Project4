@@ -14,14 +14,15 @@ public class Message implements Serializable {
     boolean newAccount;
     boolean viewAuctionHouses;
     volatile boolean KILL;
+    boolean HOUSE_LEAVING;
 
-    boolean askForList, getItems;
-    boolean fromHouse;
+    boolean askForList, getItems, houseList;
+    boolean fromHouse, register;
     boolean selectHouse;
     boolean addAgent;
-    boolean placeBid;
-    boolean newHouse;
-    int bid;
+    boolean placeBid, verify, isMember, fromBank;
+    boolean newHouse, newUser;
+    int bid, bankKey;
     String destination;
     String message;
     ArrayList<String> list;

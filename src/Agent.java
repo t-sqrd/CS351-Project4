@@ -13,8 +13,8 @@ public class Agent extends Thread {
     public static final String host = "127.0.0.1";
     public volatile boolean bidding = false;
     private volatile boolean isRunning = true;
+    public int myKey;
     private ArrayList<ListenFromServer> servers = new ArrayList<>();
-    public String myAccountNum = "";
     private Encrypt encrypt;
     Socket bankSocket = null;
     Socket centralSocket = null;
@@ -143,7 +143,7 @@ public class Agent extends Thread {
                 System.exit(1);
             }
 
-            System.out.println("Options : Make Account / View Houses ");
+            System.out.println("Options : Make Account / View Houses / register");
             System.out.println("To return to main menu typ HOME ");
 
 
@@ -157,6 +157,7 @@ public class Agent extends Thread {
             Message request;
 
 
+           boolean registered = false;
 
             while((ui = stdin.readLine()) != null){
 
@@ -166,18 +167,57 @@ public class Agent extends Thread {
                     sendMsgToBank(msg);
                     sendMsgToCentral(msg);
                     isRunning = false;
-
                     break;
                 }
-
-                else if (ui.equals("Make Account")) {
-
+                else if(ui.equals("test")){
                     request = new Message();
-                    request.newAccount = true;
-                    sendMsgToBank(request);
+                    request.register = true;
+                    request.agentName = ui;
 
+                    registered = true;
+                    sendMsgToCentral(request);
                 }
-                else if (ui.equals("View Houses")) {
+
+                else if (ui.equalsIgnoreCase("Make Account")) {
+
+                    System.out.println("Please Enter Name: ");
+                    if ((ui = stdin.readLine()) != null) {
+                        request = new Message();
+                        request.newAccount = true;
+                        request.username = ui;
+                        sendMsgToBank(request);
+                        registered = true;
+                    }
+                }
+
+                else if (ui.equalsIgnoreCase("Register")) {
+
+                    System.out.println("Please Provide Name and Bank Key: ");
+                    if((ui = stdin.readLine()) != null){
+                        String temp = ui;
+                        request = new Message();
+                        request.register = true;
+                        request.agentName = ui;
+
+                        registered = true;
+                        sendMsgToCentral(request);
+                        if(temp.length() > 1) {
+//                            System.out.println("Please Enter Bank Key: ");
+//                            ui = stdin.readLine();
+//                            request = new Message();
+//                            request.register = true;
+//                            request.agentName = temp;
+//                            request.bankKey = ui;
+//                            registered = true;
+//                            sendMsgToCentral(request);
+//
+//                        }
+                        }
+                    }
+                }
+
+                else if (ui.equals("View Houses") && registered) {
+
                     request = new Message();
                     request.message = "View";
                     //central.username = "Agent";
@@ -185,16 +225,18 @@ public class Agent extends Thread {
                     sendMsgToCentral(request);
 
                 }
-
-                else if(ui.equals("Select House")){
+                else if (ui.equals("Select House") && registered) {
                     System.out.println("Please Enter House Number: ");
                     request = new Message();
-                    while((ui = stdin.readLine()) != null){
+                    if ((ui = stdin.readLine()) != null) {
                         request.message = ui;
                         request.selectHouse = true;
                         sendMsgToCentral(request);
 
                     }
+                }
+                else{
+                    System.out.println("Please try again...");
                 }
 
 
@@ -242,6 +284,7 @@ public class Agent extends Thread {
                     Message server = (Message) fromServer.readObject();
 
                     if (server != null) {
+                       // sort(server);
                         System.out.println(serverName + " > " + server.message);
 
                     }
@@ -250,13 +293,26 @@ public class Agent extends Thread {
                 catch(IOException e) {
 
                 }
-                catch(ClassNotFoundException e){
+                catch(ClassNotFoundException ex){
 
                 }
 
             }
 
         }
+
+       private void sort(Message msg){
+           if(msg.agentName != null){
+               userName = msg.agentName;
+
+           }
+           else if(msg.bankKey != -1){
+               myKey = msg.bankKey;
+               System.out.println("MY KEY = " + myKey);
+           }
+
+
+       }
 
     }
 

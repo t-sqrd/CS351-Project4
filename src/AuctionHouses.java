@@ -19,6 +19,9 @@ public class AuctionHouses extends Thread {
     private String host = "127.0.0.1";
     private Map<String, Double> items = new HashMap<>();
     private String list;
+    private ObjectOutputStream toCentralServer;
+    private ObjectInputStream fromCentralServer;
+    private Socket centralSocket;
 
     private String[] items1 = {"Shit , $1.00 \n", "Andrews gay ass, $0.25\n", "MoreShit, $7.00\n"};
 
@@ -26,23 +29,17 @@ public class AuctionHouses extends Thread {
         new AuctionHouses();
     }
 
-    public AuctionHouses(){
-        init();
+    public AuctionHouses() {
+
+        start();
     }
 
 
-
-    public void init() {
+    public void run() {
         try {
 
 
             System.out.println("Connecting to Agent " + host + " on port " + CENTRAL_PORT + ".");
-
-
-            Socket centralSocket = null;
-
-            ObjectOutputStream toCentralServer = null;
-            ObjectInputStream fromCentralServer = null;
 
 
             try {
@@ -66,40 +63,51 @@ public class AuctionHouses extends Thread {
 
             Message request;
 
-//            toCentralServer.writeInt(1);
             Message myName = new Message();
             myName.username = "House";
             myName.newHouse = true;
             toCentralServer.writeObject(myName);
             toCentralServer.flush();
 
-                while ((request = (Message) fromCentralServer.readObject()) != null) {
+            while ((request = (Message) fromCentralServer.readObject()) != null) {
 
-                    System.out.println("In loop");
+                System.out.println("In loop");
 
-                    System.out.println(request.message);
+                System.out.println(request.message);
 //
-                    if (request.getItems) {
-                        Message response = new Message();
-                        response.agentName = request.agentName;
-                        response.fromHouse = true;
-                        response.message = "LIST : ITEM A, ITEM B, ITEM C";
-                        toCentralServer.writeObject(response);
+                if (request.getItems) {
+                    Message response = new Message();
+                    response.agentName = request.agentName;
+                    response.fromHouse = true;
+                    response.message = "LIST : ITEM A, ITEM B, ITEM C";
+                    toCentralServer.writeObject(response);
+                    toCentralServer.flush();
                 }
+
             }
+            Message kill = new Message();
+            kill.KILL = true;
+            kill.HOUSE_LEAVING = true;
+            toCentralServer.writeObject(kill);
+            toCentralServer.flush();
 
-                fromCentralServer.close();
-                toCentralServer.close();
-                centralSocket.close();
+            System.out.println("HERE IN AUCTION HOUSE");
 
+            fromCentralServer.close();
+            toCentralServer.close();
+            centralSocket.close();
 
-
-        } catch (Exception e) {
-            e.printStackTrace();
 
         }
+
+
+            catch(Exception e){
+                e.printStackTrace();
+
+            }
+        }
     }
-}
+
 
 
 
