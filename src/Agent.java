@@ -171,11 +171,13 @@ public class Agent extends Thread {
                 }
 
                 else if (ui.equals("Make Account")) {
-
+                    System.out.println("Please enter your name:");
                     request = new Message();
-                    request.newAccount = true;
-                    sendMsgToBank(request);
-
+                    while((ui = stdin.readLine()) != null){
+                        request.newAccount = true;
+                        request.username = ui;
+                        sendMsgToBank(request);
+                    }
                 }
                 else if (ui.equals("View Houses")) {
                     request = new Message();
