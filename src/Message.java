@@ -19,21 +19,16 @@ public class Message implements Serializable {
     boolean askForList, getItems, houseList;
     boolean fromHouse, register;
     boolean selectHouse;
-    boolean addAgent;
     boolean placeBid, verify, isMember, fromBank;
     boolean newHouse, newUser;
-    int bid, bankKey;
-    String destination;
-    String message;
-    ArrayList<String> list;
+    Integer biddingKey, bankKey, index;
+    String message, selectedHouse;
+    String[] items;
 
 
     public Message(){}
 
-    public Message(String message){
 
-        username = message;
-    }
 
     public String getMessage(){
         return message;
@@ -48,6 +43,8 @@ public class Message implements Serializable {
                 "Balance = " + balance;
 
     }
+
+
 
     public int getAccountNum(){
         return Integer.getInteger(accountNum);

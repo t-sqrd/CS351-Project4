@@ -8,6 +8,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 /**
  * Created by alexschmidt-gonzales on 11/30/17.
@@ -22,15 +23,36 @@ public class AuctionHouses extends Thread {
     private ObjectOutputStream toCentralServer;
     private ObjectInputStream fromCentralServer;
     private Socket centralSocket;
+    private String houseName;
 
-    private String[] items1 = {"Shit , $1.00 \n", "Andrews gay ass, $0.25\n", "MoreShit, $7.00\n"};
 
-    public static void main(String[] args) {
-        new AuctionHouses();
+    public static String[] items1 = {"Shit , $1.00 ", "Andrews gay ass, $0.25", "MoreShit, $7.00"};
+
+    public static void main(String[] args)
+    {
+        Scanner in = new Scanner(System.in);
+        System.out.println("Enter Name");
+        String name = in.nextLine();
+        new AuctionHouses(name);
     }
 
-    public AuctionHouses() {
+    public AuctionHouses(String name) {
 
+
+        this.houseName = name;
+
+        try {
+
+
+            centralSocket = new Socket(host, CENTRAL_PORT);
+            toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
+            fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
+
+
+        }
+        catch (IOException e){
+
+        }
         start();
     }
 
@@ -41,49 +63,74 @@ public class AuctionHouses extends Thread {
 
             System.out.println("Connecting to Agent " + host + " on port " + CENTRAL_PORT + ".");
 
+//
+//            try {
+//
+//
+//                centralSocket = new Socket(host, CENTRAL_PORT);
+//
+//
+//                toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
+//                fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
+//
+//
+//            } catch (UnknownHostException e) {
+//                System.err.println("Unknown host: " + host);
+//                System.exit(1);
+//            } catch (IOException e) {
+//                System.err.println("Unable to get streams from server in Auction houses");
+//                System.exit(1);
+//            }
 
-            try {
 
 
-                centralSocket = new Socket(host, CENTRAL_PORT);
-
-
-                toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
-                fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
-
-
-            } catch (UnknownHostException e) {
-                System.err.println("Unknown host: " + host);
-                System.exit(1);
-            } catch (IOException e) {
-                System.err.println("Unable to get streams from server in Auction houses");
-                System.exit(1);
-            }
-
-
-            Message request;
 
             Message myName = new Message();
-            myName.username = "House";
+            myName.username = houseName.trim();
             myName.newHouse = true;
-            toCentralServer.writeObject(myName);
-            toCentralServer.flush();
+            sendMessage(myName);
 
-            while ((request = (Message) fromCentralServer.readObject()) != null) {
+            while(centralSocket.isConnected()) {
+                Message request;
+                while ((request = (Message) fromCentralServer.readObject()) != null) {
 
-                System.out.println("In loop");
+                    System.out.println("In loop");
 
-                System.out.println(request.message);
+                    System.out.println(request.message);
+                    Message m = new Message();
+                    System.out.println(centralSocket.isConnected());
+
 //
-                if (request.getItems) {
-                    Message response = new Message();
-                    response.agentName = request.agentName;
-                    response.fromHouse = true;
-                    response.message = "LIST : ITEM A, ITEM B, ITEM C";
-                    toCentralServer.writeObject(response);
-                    toCentralServer.flush();
-                }
+                    if (request.getItems) {
+                        System.out.println("entered");
+                        Message response = new Message();
+                        response.username = request.username;
+                        System.out.println(response.username);
+                        response.fromHouse = true;
+                        response.message = arrayToString(items1);
+                        sendMessage(response);
+//                    toCentralServer.writeObject(response);
+//                    toCentralServer.flush();
+                    }
+                    if (request.placeBid) {
+                        Message response = new Message();
+                        int d = request.index;
 
+                        items1[request.index.intValue()] = " Bought ";
+                        response.username = request.username;
+                        System.out.println(d);
+                        response.fromHouse = true;
+
+                        String temp = "";
+                        for(int i = 0; i < items1.length; i++){
+                            temp += items1[i];
+                        }
+                        response.message = temp;
+                        sendMessage(response);
+
+                    }
+
+                }
             }
             Message kill = new Message();
             kill.KILL = true;
@@ -105,6 +152,24 @@ public class AuctionHouses extends Thread {
                 e.printStackTrace();
 
             }
+        }
+
+    private void sendMessage(Message msg){
+        try{
+            toCentralServer.writeObject(msg);
+            toCentralServer.flush();
+        }
+        catch (IOException e){
+
+        }
+    }
+
+    private String arrayToString(String[] items){
+        String temp = "";
+        for(int i = 0; i < items.length; i++){
+            temp += items[i];
+        }
+        return temp;
         }
     }
 

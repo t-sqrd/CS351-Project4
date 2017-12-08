@@ -13,7 +13,7 @@ import java.util.Random;
 public class Bank extends Thread {
 
 
-    private static HashMap<Integer, Account> bankMap = new HashMap<>();
+    private static HashMap<Integer, String> bankMap = new HashMap<>();
     private static LinkedList<Account> accounts = new LinkedList<>();
     private Socket bankSocket;
     private final int MAX_ACCOUNTS = 10000;
@@ -89,19 +89,28 @@ public class Bank extends Thread {
                         if (request.verify) {
                             Message response = new Message();
                             System.out.println("Entered If statement");
-                            this.clientName = "CENTRAL";
+                            clientName = "CENTRAL";
 
 
-                            response.isMember = bankMap.containsKey(request.bankKey);
+                            if(bankMap.containsKey(request.bankKey)){
+                                response.isMember = true;
+                                response.message = "USER IS MEMBER";
+                                response.fromBank = true;
+                                sendMessage(response);
+
+                            }
+                            else{
+                                response.isMember = false;
+                                response.message = "User not found";
+                                sendMessage(response);
+                            }
 
 
 
-                            response.message = "USER IS MEMBER";
-                            response.fromBank = true;
                             for(Integer i : bankMap.keySet()){
                                 System.out.println("KEYS = " + i);
                             }
-                            sendMessage(response);
+
                           //  }
 
                         }
@@ -163,7 +172,7 @@ public class Bank extends Thread {
         clientName = request.username;
         Account account = new Account(request.username);
         int key = makeBankKey();
-        bankMap.put(key, account);
+        bankMap.put(key, clientName);
         //response.message = account.returnPackage();
         response.message = "Bank key = " + key;
         response.bankKey = key;
@@ -252,14 +261,13 @@ public class Bank extends Thread {
 
     }
 
-    private int makeBankKey() {
+    private Integer makeBankKey() {
         Random rand = new Random();
-        int key = rand.nextInt(50);
+        Integer key = rand.nextInt(50);
         if(bankMap.containsKey(key)){
             makeBankKey();
         }
 
-        bankMap.put(key, account);
         return key;
 
     }
