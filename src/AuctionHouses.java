@@ -39,12 +39,13 @@ public class AuctionHouses extends Thread {
     public AuctionHouses(String name) {
 
 
-        this.houseName = name;
+        this.houseName = "House " + name;
 
         try {
 
 
             centralSocket = new Socket(host, CENTRAL_PORT);
+
             toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
             fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
@@ -98,7 +99,7 @@ public class AuctionHouses extends Thread {
 
                     System.out.println(request.message);
                     Message m = new Message();
-                    System.out.println(centralSocket.isConnected());
+
 
 //
                     if (request.getItems) {
@@ -109,8 +110,7 @@ public class AuctionHouses extends Thread {
                         response.fromHouse = true;
                         response.message = arrayToString(items1);
                         sendMessage(response);
-//                    toCentralServer.writeObject(response);
-//                    toCentralServer.flush();
+
                     }
                     if (request.placeBid) {
                         Message response = new Message();
@@ -148,10 +148,13 @@ public class AuctionHouses extends Thread {
         }
 
 
-            catch(Exception e){
+            catch(IOException e){
                 e.printStackTrace();
 
             }
+        catch (ClassNotFoundException e){
+
+        }
         }
 
     private void sendMessage(Message msg){

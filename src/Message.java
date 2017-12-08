@@ -16,7 +16,7 @@ public class Message implements Serializable {
     volatile boolean KILL;
     boolean HOUSE_LEAVING;
 
-    boolean askForList, getItems, houseList;
+    boolean askForList, getItems, moveFunds;
     boolean fromHouse, register;
     boolean selectHouse;
     boolean placeBid, verify, isMember, fromBank;
@@ -24,6 +24,7 @@ public class Message implements Serializable {
     Integer biddingKey, bankKey, index;
     String message, selectedHouse;
     String[] items;
+    Agent AGENT;
 
 
     public Message(){}
@@ -32,6 +33,10 @@ public class Message implements Serializable {
 
     public String getMessage(){
         return message;
+    }
+
+    public Agent returnAgent(){
+        return AGENT;
     }
 
 

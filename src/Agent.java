@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
@@ -27,104 +28,69 @@ public class Agent extends Thread {
 
     BufferedReader stdin;
 
-    public static  volatile boolean changeServer;
-
-
-
-
 
     public static void main(String args[]) {
 
+        ArrayList<Integer> online = new ArrayList<>();
+        Random rand = new Random();
+        Integer user = rand.nextInt(10000);
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Please Enter Name: ");
-        String name = scanner.nextLine();
-        if(name != null){
-            new Agent(name);
+//        System.out.println("Please Enter Name: ");
+//
+//        String name = scanner.nextLine();
+//        if (name != null && !online.contains(Integer.parseInt(name))) {
+//            System.out.println("Welcome Agent " + name + "!");
+//            online.add(user);
+//            new Agent(name);
+//        }
+//        else{
+//            System.out.println("Entered Else");
+//        }
+        if(!online.contains(user)){
+            System.out.println("Welcome Agent #" + user + "!");
+            new Agent(Integer.toString(user));
         }
 
     }
 
-    public Agent(String userName){
+    public Agent(String userName) {
 
         this.agentName = "Agent " + userName;
-
         start();
-
-
 
     }
 
 
-
-
-
-    private void sendMsgToCentral(Message msg){
-        try{
+    private void sendMsgToCentral(Message msg) {
+        try {
             toCentralServer.writeObject(msg);
             toCentralServer.flush();
 
-        }
-        catch(IOException e){
+        } catch (IOException e) {
 
         }
 
     }
 
-    private void sendMsgToBank(Message msg){
+    private void sendMsgToBank(Message msg) {
         try {
             toBankServer.writeObject(msg);
             toBankServer.flush();
-        }
-        catch(IOException e){
+        } catch (IOException e) {
 
         }
     }
-
-    private void connectToServer(){
-        System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
-        try {
-            bankSocket = new Socket(host, BANK_PORT);
-
-            centralSocket = new Socket(host, CENTRAL_PORT);
-            //bankSocket.connect(centralSocket.getLocalSocketAddress());
-           // centralSocket = new Socket(host, CENTRAL_PORT);
-
-            try {
-
-                toBankServer = new ObjectOutputStream(bankSocket.getOutputStream());
-                fromBankServer = new ObjectInputStream(bankSocket.getInputStream());
-
-                toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
-                fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
-
-
-
-            } catch (UnknownHostException e) {
-                System.err.println("Unknown host: " + host);
-                System.exit(1);
-            } catch (IOException e) {
-                System.err.println("Unable to get streams from server in Agent");
-                System.exit(1);
-            }
-        }
-        catch (IOException e){
-
-        }
-    }
-
 
 
     public void run() {
-//
-       try {
+
+        try {
 
 
             System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
 
             bankSocket = new Socket(host, BANK_PORT);
             centralSocket = new Socket(host, CENTRAL_PORT);
-
-
 
 
             try {
@@ -139,7 +105,6 @@ public class Agent extends Thread {
                 new ListenFromServer(fromCentralServer, "Central").start();
 
                 stdin = new BufferedReader(new InputStreamReader(System.in));
-
 
 
             } catch (UnknownHostException e) {
@@ -159,12 +124,9 @@ public class Agent extends Thread {
 
             String ui;
 
+            boolean registered = false;
 
-
-
-           boolean registered = false;
-
-            while((ui = stdin.readLine()) != null) {
+            while ((ui = stdin.readLine()) != null) {
 
                 if (ui.equals("QUIT")) {
                     Message msg = new Message();
@@ -173,6 +135,7 @@ public class Agent extends Thread {
                     sendMsgToCentral(msg);
                     isRunning = false;
                     break;
+
                 } else if (ui.equalsIgnoreCase("Make Account")) {
 
                     System.out.println("Please Enter Name: ");
@@ -191,12 +154,12 @@ public class Agent extends Thread {
                         Message request = new Message();
                         request.register = true;
                         request.username = ui;
-
                         registered = true;
                         sendMsgToCentral(request);
+
                     }
 
-                } else if (ui.equals("View Houses") ){//&& registered) {
+                } else if (ui.equals("View Houses")) {//&& registered) {
 
                     Message request = new Message();
                     request.message = "View";
@@ -205,7 +168,7 @@ public class Agent extends Thread {
                     request.askForList = true;
                     sendMsgToCentral(request);
 
-                } else if (ui.equals("Select House") ){//&& registered) {
+                } else if (ui.equals("Select House")) {//&& registered) {
                     System.out.println("Please Enter House Number: ");
                     Message request = new Message();
                     if ((ui = stdin.readLine()) != null) {
@@ -228,15 +191,15 @@ public class Agent extends Thread {
                         bid.placeBid = true;
                         bid.username = agentName;
                         System.out.println("Please Enter Item Number: ");
-                        if((ui = stdin.readLine()) != null) {
-
+                        if ((ui = stdin.readLine()) != null) {
                             bid.index = Integer.parseInt(ui);
                             sendMsgToCentral(bid);
                         }
 
                     }
                 }
-                else{
+
+                else {
                     System.out.println("Please try again...");
                 }
 
@@ -252,14 +215,11 @@ public class Agent extends Thread {
                 bankSocket.close();
                 centralSocket.close();
 
-            }
-            catch(InterruptedException e){
+            } catch (InterruptedException e) {
 
             }
 
-        }
-
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -267,33 +227,31 @@ public class Agent extends Thread {
 
     class ListenFromServer extends Thread {
 
-       ObjectInputStream myServer;
-       String serverName;
+        ObjectInputStream myServer;
+        String serverName;
 
-       public ListenFromServer(ObjectInputStream fromServer, String serverName){
-           this.myServer = fromServer;
-           this.serverName = serverName;
-       }
+        public ListenFromServer(ObjectInputStream fromServer, String serverName) {
+            this.myServer = fromServer;
+            this.serverName = serverName;
+        }
 
         public void run() {
 
-            while(isRunning) {
+            while (isRunning) {
 
                 try {
 
                     Message server = (Message) myServer.readObject();
 
                     if (server != null) {
-                       // sort(server);
                         System.out.println(serverName + " > " + server.message);
 
                     }
                 }
-
-                catch(IOException e) {
+                catch (IOException e) {
 
                 }
-                catch(ClassNotFoundException ex){
+                catch (ClassNotFoundException ex) {
 
                 }
 
@@ -301,9 +259,9 @@ public class Agent extends Thread {
 
         }
 
-       }
-
     }
+
+}
 
 
 
