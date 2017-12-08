@@ -55,7 +55,16 @@ public class Agent extends Thread {
 
     public Agent(String userName) {
 
-        this.agentName = "Agent " + userName;
+        try{
+            bankSocket = new Socket(host, BANK_PORT);
+            centralSocket = new Socket(host, CENTRAL_PORT);
+            bankSocket.connect(centralSocket.getLocalSocketAddress());
+        }
+        catch (IOException e){
+
+        }
+
+        this.agentName = "Agent " + bankSocket.getLocalPort();
         start();
 
     }
@@ -65,6 +74,7 @@ public class Agent extends Thread {
         try {
             toCentralServer.writeObject(msg);
             toCentralServer.flush();
+
 
         } catch (IOException e) {
 
@@ -76,6 +86,7 @@ public class Agent extends Thread {
         try {
             toBankServer.writeObject(msg);
             toBankServer.flush();
+
         } catch (IOException e) {
 
         }
@@ -89,8 +100,6 @@ public class Agent extends Thread {
 
             System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
 
-            bankSocket = new Socket(host, BANK_PORT);
-            centralSocket = new Socket(host, CENTRAL_PORT);
 
 
             try {
@@ -103,6 +112,7 @@ public class Agent extends Thread {
 
                 new ListenFromServer(fromBankServer, "Bank").start();
                 new ListenFromServer(fromCentralServer, "Central").start();
+
 
                 stdin = new BufferedReader(new InputStreamReader(System.in));
 
@@ -142,15 +152,15 @@ public class Agent extends Thread {
                     if ((ui = stdin.readLine()) != null) {
                         Message request = new Message();
                         request.newAccount = true;
+                        this.agentName = ui;
                         request.username = ui;
                         sendMsgToBank(request);
-                        registered = true;
                     }
+
                 } else if (ui.equalsIgnoreCase("Register")) {
 
                     System.out.println("Please Provide Name and Bank Key: ");
                     if ((ui = stdin.readLine()) != null) {
-                        String temp = ui;
                         Message request = new Message();
                         request.register = true;
                         request.username = ui;
@@ -159,7 +169,7 @@ public class Agent extends Thread {
 
                     }
 
-                } else if (ui.equals("View Houses")) {//&& registered) {
+                } else if (ui.equals("View Houses") && registered) {
 
                     Message request = new Message();
                     request.message = "View";
@@ -168,21 +178,23 @@ public class Agent extends Thread {
                     request.askForList = true;
                     sendMsgToCentral(request);
 
-                } else if (ui.equals("Select House")) {//&& registered) {
+                } else if (ui.equals("Select House") && registered) {
                     System.out.println("Please Enter House Number: ");
                     Message request = new Message();
                     if ((ui = stdin.readLine()) != null) {
-
-                        request.selectedHouse = ui.trim();
+                        if (!ui.contains("House")){
+                            request.selectedHouse = "House " + ui;
+                        }
+                        else{
+                            request.selectedHouse = ui;
+                        }
                         request.selectHouse = true;
                         request.username = agentName;
                         request.getItems = true;
-
-
                         sendMsgToCentral(request);
-
                     }
-                } else if (ui.equalsIgnoreCase("Place bid")) {
+
+                } else if (ui.equalsIgnoreCase("Place bid") && registered) {
                     Message bid = new Message();
                     System.out.println("Please Choose House: ");
                     if ((ui = stdin.readLine()) != null) {
@@ -201,6 +213,8 @@ public class Agent extends Thread {
 
                 else {
                     System.out.println("Please try again...");
+                    if(!registered)
+                    System.out.println("You may still need to register or create an account...");
                 }
 
 
@@ -231,23 +245,24 @@ public class Agent extends Thread {
         String serverName;
 
         public ListenFromServer(ObjectInputStream fromServer, String serverName) {
-            this.myServer = fromServer;
+            myServer = fromServer;
             this.serverName = serverName;
         }
 
         public void run() {
 
+            Message server;
             while (isRunning) {
 
                 try {
+                        server = (Message) myServer.readObject();
 
-                    Message server = (Message) myServer.readObject();
+                        if (server != null) {
+                            System.out.println(serverName + " > " + server.message);
 
-                    if (server != null) {
-                        System.out.println(serverName + " > " + server.message);
-
+                        }
                     }
-                }
+
                 catch (IOException e) {
 
                 }

@@ -71,17 +71,26 @@ public class Bank extends Thread {
                             System.out.println("Entered If statement");
                             clientName = "CENTRAL";
 
+                            Integer key = request.bankKey;
+                            boolean isRegistered = bankMap.get(key).isRegistered;
 
-                            if(bankMap.containsKey(request.bankKey)){
+                            if(bankMap.containsKey(key) && !isRegistered){
+
+                                bankMap.get(key).isRegistered = true;
                                 response.isMember = true;
                                 response.message = "USER IS MEMBER";
                                 response.fromBank = true;
                                 sendMessage(response);
 
                             }
+                            else if(isRegistered){
+                                response.message = "Account already registered";
+                                response.isMember = false;
+                                sendMessage(response);
+                            }
                             else{
                                 response.isMember = false;
-                                response.message = "User not found";
+                                response.message = "Bank Account not found";
                                 sendMessage(response);
                             }
 

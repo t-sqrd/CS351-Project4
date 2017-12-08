@@ -100,20 +100,21 @@ public class AuctionCentral extends Thread {
                         response.verify = true;
                         response.username = myName;
                         bankBroadcast(response);
+                        Message bankMsg = readFromBank();
 
 
-                        if (readFromBank()) {
+                        if (bankMsg.isMember) {
                             Integer key = makeBiddingKey();
                             registeredUsers.put(key, myName);
                             response = new Message();
                             response.biddingKey = key;
                             response.message = "Your account has been activated, Bidding key -> " + key;
-                            agentBroadcast(response);
+                            clientBroadcast(response);
 
                         } else {
-                            response = new Message();
-                            response.message = "Bank account not found...";
-                            agentBroadcast(response);
+
+                            //bankMsg.message = "Bank account not found or account is already registered...";
+                            clientBroadcast(bankMsg);
                         }
 
 
@@ -129,22 +130,23 @@ public class AuctionCentral extends Thread {
                         sendHouseList();
                     }
 
-                    if (request.selectHouse && housesAvailable) {
-                        if (request != null)
-                            communicationBeta(request, request.selectedHouse); //formCommunication(myName, request.message);
+                    if (request.selectHouse) {
+                        if (housesAvailable) formCommunication(request, request.selectedHouse); //formCommunication(myName, request.message);
 
 
-                        else if (request.selectHouse && !housesAvailable) {
+                        else {
                             Message m = new Message();
                             m.message = "There are no houses available...";
-                            agentBroadcast(m);
+                            clientBroadcast(m);
                         }
                     }
                 }
             }
 
 
-        } catch (IOException e) {
+        }
+
+        catch (IOException e) {
 
 
         } catch (ClassNotFoundException e) {
@@ -156,6 +158,9 @@ public class AuctionCentral extends Thread {
                 System.out.println(myName + " is logging off...");
                 threads.remove(this);
                 houseLeavingListener(this);
+                fromBank.close();
+                toBank.close();
+                bankSocket.close();
                 fromClient.close();
                 toClient.close();
                 socket.close();
@@ -164,6 +169,7 @@ public class AuctionCentral extends Thread {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
 
         }
 
@@ -194,7 +200,7 @@ public class AuctionCentral extends Thread {
     private void houseResponse(Message request) {
         for (AuctionCentral t : threads) {
             if (t.myName.equals(request.username)) {
-                t.agentBroadcast(request);
+                t.clientBroadcast(request);
             }
         }
 
@@ -216,38 +222,38 @@ public class AuctionCentral extends Thread {
 
     }
 
-    private void communicationBeta(Message msg, String house) {
+    private void formCommunication(Message msg, String house) {
         for (AuctionCentral t : threads) {
             //AuctionCentral t = threads.get(i);
             if (t.myName.equals(house)) {
 
-                t.houseBroadcast(msg);
+                t.clientBroadcast(msg);
             }
         }
 
     }
 
 
-    private void formCommunication(String agent, String house) {
-        Message msg = new Message();
-        for (AuctionCentral t : threads) {
-            if (t.myName.equals(house)) {
-                msg.username = agent;
-                msg.getItems = true;
+//    private void formCommunication(String agent, String house) {
+//        Message msg = new Message();
+//        for (AuctionCentral t : threads) {
+//            if (t.myName.equals(house)) {
+//                msg.username = agent;
+//                msg.getItems = true;
+//
+//                t.houseBroadcast(msg);
+//            }
+//        }
+//    }
 
-                t.houseBroadcast(msg);
-            }
-        }
-    }
-
-    private void newHouseListener(boolean newHouse) {
+    private void newHouseListener(boolean newHouse){
 
         if (newHouse) {
             Message msg = new Message();
             for (AuctionCentral t : threads) {
                 if (t.myName.contains("Agent")) {
                     msg.message = "New AuctionHouse has entered! -> " + this.myName;
-                    t.agentBroadcast(msg);
+                    t.clientBroadcast(msg);
                     housesAvailable = true;
                 }
             }
@@ -262,7 +268,7 @@ public class AuctionCentral extends Thread {
         for (AuctionCentral t : threads) {
             if (thread.myName.contains("House") && t.myName.contains("Agent")) {
                 msg.message = thread.myName + " is going offline...";
-                t.agentBroadcast(msg);
+                t.clientBroadcast(msg);
             }
         }
     }
@@ -280,27 +286,28 @@ public class AuctionCentral extends Thread {
 
     }
 
-    private boolean readFromBank() throws ClassNotFoundException {
+    private Message readFromBank() throws ClassNotFoundException {
 
+        Message m = new Message();
         try {
 
-            Message m = (Message) fromBank.readObject();
+            m = (Message) fromBank.readObject();
             boolean member = m.isMember;
 
             System.out.println(member);
 
             System.out.println(m.message);
-            return m.isMember;
+            return m;
         } catch (IOException e) {
 
         }
-        return false;
+        return m;
 
 
     }
 
 
-    private void agentBroadcast(Message msg) {
+    private void clientBroadcast(Message msg) {
         try {
 
             toClient.writeObject(msg);
@@ -312,14 +319,14 @@ public class AuctionCentral extends Thread {
         }
     }
 
-    private void houseBroadcast(Message msg) {
-        try {
-            toClient.writeObject(msg);
-            toClient.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    private void houseBroadcast(Message msg) {
+//        try {
+//            toClient.writeObject(msg);
+//            toClient.flush();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     private void sendHouseList() {
         boolean hasHouse = false;
@@ -331,7 +338,7 @@ public class AuctionCentral extends Thread {
                 send.message = "All houses online  " + t.myName;
                 hasHouse = true;
                 housesAvailable = true;
-                agentBroadcast(send);
+                clientBroadcast(send);
 
             }
 
@@ -341,7 +348,7 @@ public class AuctionCentral extends Thread {
             Message msg = new Message();
             msg.message = "No Auction Houses are online right now";
             housesAvailable = false;
-            agentBroadcast(msg);
+            clientBroadcast(msg);
         }
     }
 

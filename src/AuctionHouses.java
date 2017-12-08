@@ -30,64 +30,47 @@ public class AuctionHouses extends Thread {
 
     public static void main(String[] args)
     {
-        Scanner in = new Scanner(System.in);
-        System.out.println("Enter Name");
-        String name = in.nextLine();
-        new AuctionHouses(name);
+//        Scanner in = new Scanner(System.in);
+//        System.out.println("Enter Name");
+//        String name = in.nextLine();
+        new AuctionHouses();
     }
 
-    public AuctionHouses(String name) {
+    public AuctionHouses() {
+
+        System.out.println("Connecting to Agent " + host + " on port " + CENTRAL_PORT + ".");
 
 
-        this.houseName = "House " + name;
-
-        try {
+            try {
 
 
-            centralSocket = new Socket(host, CENTRAL_PORT);
+                centralSocket = new Socket(host, CENTRAL_PORT);
 
-            toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
-            fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
+                this.houseName = "House #" + centralSocket.getLocalPort();
+
+                toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
+                fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
 
-        }
-        catch (IOException e){
-
-        }
+            } catch (UnknownHostException e) {
+                System.err.println("Unknown host: " + host);
+                System.exit(1);
+            } catch (IOException e) {
+                System.err.println("Unable to get streams from server in Auction houses");
+                System.exit(1);
+            }
         start();
+
     }
 
 
     public void run() {
+
+
         try {
 
-
-            System.out.println("Connecting to Agent " + host + " on port " + CENTRAL_PORT + ".");
-
-//
-//            try {
-//
-//
-//                centralSocket = new Socket(host, CENTRAL_PORT);
-//
-//
-//                toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
-//                fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
-//
-//
-//            } catch (UnknownHostException e) {
-//                System.err.println("Unknown host: " + host);
-//                System.exit(1);
-//            } catch (IOException e) {
-//                System.err.println("Unable to get streams from server in Auction houses");
-//                System.exit(1);
-//            }
-
-
-
-
             Message myName = new Message();
-            myName.username = houseName.trim();
+            myName.username = houseName;
             myName.newHouse = true;
             sendMessage(myName);
 

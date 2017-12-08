@@ -4,6 +4,7 @@ import java.util.Random;
 
 public class Account{
 
+    public boolean isRegistered;
     private String clientName;
     private static ArrayList<Integer> usedAccountNumbers = new ArrayList<>();
     private static ArrayList<Integer> usedBankKeys = new ArrayList<>();
@@ -12,6 +13,7 @@ public class Account{
     private Integer accountNumber;
     private Integer bankKey;
     private Integer initiaDeposit;
+
 
 
     public Account(String clientName){
@@ -29,6 +31,7 @@ public class Account{
     public Integer getKey(){
         return bankKey;
     }
+
 
 
     private Integer makeBankKey() {
