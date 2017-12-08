@@ -1,29 +1,31 @@
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
 public class Agent extends Thread {
-    public String userName;
+    public String agentName;
     private String initBid;
     private static int BANK_PORT = 8080;
     private static int CENTRAL_PORT = 8081;
     public static final String host = "127.0.0.1";
     public volatile boolean bidding = false;
-    private volatile boolean creatingAccount = false;
-    private ArrayList<String> userInfo = new ArrayList<>();
-    public String myAccountNum = "";
+    private volatile boolean isRunning = true;
+    private static String options = "*** Options : Make Account / View Houses / Register / Select House / Place Bid ***";
+    public int myKey;
+    private ArrayList<ListenFromServer> servers = new ArrayList<>();
     private Encrypt encrypt;
-     Socket bankSocket = null;
+    Socket bankSocket = null;
     Socket centralSocket = null;
 
     ObjectOutputStream toBankServer;
-     ObjectOutputStream toCentralServer;
+    ObjectOutputStream toCentralServer;
 
     ObjectInputStream fromBankServer;
-     ObjectInputStream fromCentralServer;
+    ObjectInputStream fromCentralServer;
 
     BufferedReader stdin;
 
@@ -35,18 +37,26 @@ public class Agent extends Thread {
 
     public static void main(String args[]) {
 
-        new Agent("ALEX");
-
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Please Enter Name: ");
+        String name = scanner.nextLine();
+        if(name != null){
+            new Agent(name);
+        }
 
     }
 
     public Agent(String userName){
 
-        this.userName = userName;
+        this.agentName = "Agent " + userName;
+
         start();
 
 
+
     }
+
+
 
 
 
@@ -72,14 +82,47 @@ public class Agent extends Thread {
         }
     }
 
+    private void connectToServer(){
+        System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
+        try {
+            bankSocket = new Socket(host, BANK_PORT);
+
+            centralSocket = new Socket(host, CENTRAL_PORT);
+            //bankSocket.connect(centralSocket.getLocalSocketAddress());
+           // centralSocket = new Socket(host, CENTRAL_PORT);
+
+            try {
+
+                toBankServer = new ObjectOutputStream(bankSocket.getOutputStream());
+                fromBankServer = new ObjectInputStream(bankSocket.getInputStream());
+
+                toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
+                fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
+
+
+
+            } catch (UnknownHostException e) {
+                System.err.println("Unknown host: " + host);
+                System.exit(1);
+            } catch (IOException e) {
+                System.err.println("Unable to get streams from server in Agent");
+                System.exit(1);
+            }
+        }
+        catch (IOException e){
+
+        }
+    }
+
 
 
     public void run() {
+//
+       try {
 
-        try {
 
-
-            System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
+           System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
+           System.out.println(options);
 
             bankSocket = new Socket(host, BANK_PORT);
             centralSocket = new Socket(host, CENTRAL_PORT);
@@ -95,9 +138,10 @@ public class Agent extends Thread {
                 toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
                 fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
+                new ListenFromServer(fromBankServer, "Bank").start();
+                new ListenFromServer(fromCentralServer, "Central").start();
+
                 stdin = new BufferedReader(new InputStreamReader(System.in));
-
-
 
 
 
@@ -109,58 +153,101 @@ public class Agent extends Thread {
                 System.exit(1);
             }
 
-            System.out.println("Options : Make Account / View Houses ");
-            System.out.println("To return to main menu typ HOME ");
 
-            new ListenFromServer().start();
+            Message myName = new Message();
+            myName.username = agentName;
+            sendMsgToCentral(myName);
 
-
-            Message x = new Message();
-            x.username = "Agent";
-            sendMsgToCentral(x);
             String ui;
-            Message msg;
-            Message request;
 
-            while((ui = stdin.readLine()) != null){
+           boolean registered = false;
 
+            while((ui = stdin.readLine().toLowerCase()) != null) {
 
-                if(ui.equals("QUIT")){
-                    msg = new Message();
+                System.out.println(options);
+
+                if (ui.equals("QUIT")) {
+                    Message msg = new Message();
                     msg.KILL = true;
                     sendMsgToBank(msg);
                     sendMsgToCentral(msg);
+                    isRunning = false;
                     break;
-                }
+                } else if (ui.equalsIgnoreCase("Make Account")) {
 
-                else if (ui.equals("Make Account")) {
+                    System.out.println("Please Enter Name: ");
+                    if ((ui = stdin.readLine()) != null) {
+                        Message request = new Message();
+                        request.newAccount = true;
+                        request.username = ui;
+                        sendMsgToBank(request);
+                        registered = true;
+                    }
+                } else if (ui.equalsIgnoreCase("Register")) {
 
-                    request = new Message();
-                    request.message = "Make";
-                    sendMsgToBank(request);
+                    System.out.println("Please Provide Name and Bank Key: ");
+                    if ((ui = stdin.readLine()) != null) {
+                        String temp = ui;
+                        Message request = new Message();
+                        request.register = true;
+                        request.username = ui;
 
-
-                    System.out.println("From Bank = " + fromBankServer.readObject());
-
-
-                }
-                else if (ui.equals("View Houses")) {
-                    request = new Message();
-                    request.message = "View";
-                    //central.username = "Agent";
-                    request.askForList = true;
-                    sendMsgToCentral(request);
-                }
-
-                else if(ui.equals("Select House")){
-                    System.out.println("Please Enter House Number: ");
-                    request = new Message();
-                    while((ui = stdin.readLine()) != null){
-                        request.message = ui;
-                        request.selectHouse = true;
+                        registered = true;
                         sendMsgToCentral(request);
                     }
+
+                } else if (ui.contains("vi") ){//&& registered) {
+
+                    Message request = new Message();
+                    request.message = "View";
+                    request.username = agentName;
+                    request.askForList = true;
+                    sendMsgToCentral(request);
+
+                } else if (ui.contains("se") ){//&& registered) {
+                    System.out.println("Please Enter House Number: ");
+                    Message request = new Message();
+                    if ((ui = stdin.readLine()) != null) {
+
+                        request.selectedHouse = ui.trim();
+                        request.selectHouse = true;
+                        request.username = agentName;
+                        request.getItems = true;
+
+
+                        sendMsgToCentral(request);
+
+                    }
+                } else if (ui.contains("bi")) {
+                    Message bid = new Message();
+                    System.out.println("Please Choose House: ");
+                    if ((ui = stdin.readLine()) != null) {
+                        bid.selectedHouse = ui;
+                        bid.selectHouse = true;
+                        bid.placeBid = true;
+                        bid.username = agentName;
+                        System.out.println("Please Enter Item Number: ");
+                        if((ui = stdin.readLine()) != null) {
+                            bid.index = Integer.parseInt(ui) - 1;
+                        }
+                        System.out.println("Please Enter Your Bid Amount: ");
+                        if((ui = stdin.readLine()) != null) {
+                            bid.bidAmount = Integer.parseInt(ui);
+                        }
+                        sendMsgToCentral(bid);
+
+                    }
+                } else if(ui.contains("test")){
+                    Message test = new Message();
+                    test.test = true;
+                    test.selectHouse = true;
+                    test.selectedHouse = "1";
+                    sendMsgToCentral(test);
                 }
+                else{
+                    System.out.println("Please try again...");
+                }
+
 
             }
             try {
@@ -178,80 +265,6 @@ public class Agent extends Thread {
 
             }
 
-
-
-
-
-
-
-
-
-
-
-            //BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-
-
-
-
-
-
-//            while (true) {
-//
-//
-//
-//
-//            }
-
-
-
-//            boolean flag = false;
-//            String ui;
-//            while (true) {
-//                ui = stdin.readLine();
-//                //serverOut.writeBytes(ui + '\n');
-//                if ("q".equals(ui))break;
-//                if (ui.equals("Make Account")) {
-//
-//                        Message send = new Message();
-//                        String info;
-//                        System.out.println("Please Enter Name: ");
-//
-//                       while ((info = stdin.readLine()) != null && !flag) {
-//                            send.username = info;
-//                            send.newAccount = true;
-//                            if (send.hasNewAccountInfo()) flag = true;
-//                            toBankServer.writeObject(send);
-//                            System.out.println(((Message)fromBankServer.readObject()).getMessage());
-//
-//                        }
-//                    System.out.println("EXITED THIS LOOP");
-//
-//                    }
-//
-//
-//                if (ui.equalsIgnoreCase("View Bidding Houses")) {
-//                    Message send = new Message();
-//                    send.viewAuctionHouses = true;
-//                    toCentralServer.writeObject(send);
-//                    System.out.println(((Message)fromCentralServer.readObject()).askForList);
-//                }
-//
-//
-//                toBankServer.reset();
-//                toCentralServer.reset();
-//                flag = false;
-//
-//
-//            }
-
-//            toBankServer.close();
-//            fromBankServer.close();
-//            toCentralServer.close();
-//            fromCentralServer.close();
-//            bankSocket.close();
-//            centralSocket.close();
-
-       //     }
         }
 
         catch (Exception e) {
@@ -259,32 +272,60 @@ public class Agent extends Thread {
         }
     }
 
-   class ListenFromServer extends Thread {
+
+    class ListenFromServer extends Thread {
+
+       ObjectInputStream myServer;
+       String serverName;
+
+       public ListenFromServer(ObjectInputStream fromServer, String serverName){
+           this.myServer = fromServer;
+           this.serverName = serverName;
+       }
+
+       public void printItems(String[] items, double[] prices){
+           System.out.println("itemPack from this house:");
+           DecimalFormat format = new DecimalFormat("0.00");
+           for(int i = 0; i < items.length; i++){
+               String price = format.format(prices[i]);
+               System.out.println("   " + (i+1) + ") " + items[i] + " $" + price);
+           }
+       }
+
+        public void printHouses(String[] houses){
+            System.out.println("All Auction Houses Online:");
+            for(int i = 0; i < houses.length; i++){
+                System.out.println("   " + (i+1) + ") " + houses[i]);
+            }
+        }
 
         public void run() {
 
-            while(true) {
+            while(isRunning) {
 
                 try {
 
+                    Message server = (Message) myServer.readObject();
 
-                    Message central = (Message) fromCentralServer.readObject();
-
-                    if (central != null) {
-                        System.out.println("Central > " + central.message);
-
+                    if (server != null) {
+                        if(server.isItems){
+                            printItems(server.items, server.prices);
+                        } else if(server.houseList) {
+                            printHouses(server.houses);
+                        } else if(server.placeBid){
+                            if(server.invalidBid) System.out.println("Your bid must be higher than the existing bid!");
+                            else System.out.println("Your bid was successful!");
+                            printItems(server.items, server.prices);
+                        } else {
+                            System.out.println(serverName + " > " + server.message);
+                        }
                     }
-
-
                 }
 
                 catch(IOException e) {
 
                 }
-
-
-
-                catch(ClassNotFoundException e2) {
+                catch(ClassNotFoundException ex){
 
                 }
 
@@ -292,9 +333,11 @@ public class Agent extends Thread {
 
         }
 
+       }
+
     }
 
-}
+
 
 
 

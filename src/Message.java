@@ -3,7 +3,6 @@
  */
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Message implements Serializable {
     private static final long serialVersionUID = -5399605122490343339L;
@@ -11,23 +10,38 @@ public class Message implements Serializable {
     String username;
     String accountNum;
     String balance;
+    String agentName;
     boolean newAccount;
-
+    boolean viewAuctionHouses;
     volatile boolean KILL;
-    boolean askForList;
-    boolean fromHouse;
-    boolean newHouse;
+    boolean HOUSE_LEAVING;
+
+    boolean askForList, getItems, houseList, isItems;
+    boolean fromHouse, register;
     boolean selectHouse;
-    boolean getItems;
-    String message, agentName;
-    ArrayList<String> list;
+    boolean placeBid, verify, isMember, fromBank;
+    boolean newHouse, newUser, invalidBid, test;
+    int test2, test3;
+    Integer biddingKey, bankKey, index, bidAmount;
+    String message, selectedHouse;
+    String[] items;
+    String[] houses;
+    double[] prices;
+
+    int counterD = 0;
+    int counterS = 0;
 
 
     public Message(){}
 
-    public Message(String message){
+    public void makeDoubleArray(double price){
+        prices[counterD] = price;
+        counterD++;
+    }
 
-        username = message;
+    public void makeStringArray(String item){
+        items[counterS] = item;
+        counterS++;
     }
 
     public String getMessage(){
@@ -43,6 +57,8 @@ public class Message implements Serializable {
                 "Balance = " + balance;
 
     }
+
+
 
     public int getAccountNum(){
         return Integer.getInteger(accountNum);
