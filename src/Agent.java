@@ -171,7 +171,7 @@ public class Agent extends Thread {
 
             boolean registered = false;
 
-            while((ui = stdin.readLine().toLowerCase()) != null) {
+            while((ui = stdin.readLine()) != null) {
 
                 System.out.println(options);
 
@@ -206,7 +206,7 @@ public class Agent extends Thread {
 
                     }
 
-                } else if (ui.equals("View Houses") && registered) {
+                } else if (ui.contains("vi") && registered) {
 
                     Message request = new Message();
                     request.message = "View";
@@ -320,6 +320,7 @@ public class Agent extends Thread {
 
                     if (server != null) {
                         if(server.isItems){
+                            System.out.println("Is Items: " + server.items[0]);
                             printItems(server.items, server.prices);
                         } else if(server.houseList) {
                             printHouses(server.houses);

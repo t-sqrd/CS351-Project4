@@ -62,6 +62,7 @@ public class AuctionCentral extends Thread {
 
             Message user = (Message) fromClient.readObject();
             this.myName = user.username;
+            System.out.println(myName);
             this.newHouse = user.newHouse;
 
 
@@ -132,6 +133,7 @@ public class AuctionCentral extends Thread {
 
 
                     if (request.askForList) {
+                        System.out.println("Here");
                         sendHouseList();
                     }
 
@@ -191,13 +193,15 @@ public class AuctionCentral extends Thread {
                 name += str.charAt(i);
             }
         }
-        myName = name;
+        myName = name.trim();
         clientBankKey = Integer.parseInt(key);
     }
 
     private void houseResponse(Message request){
         for (AuctionCentral t : threads) {
+            System.out.println(t.myName + " " + request.username);
             if (t.myName.equals(request.username)) {
+                System.out.println("IN RESPONSE: " + request.items[0]);
                 t.clientBroadcast(request);
             }
         }
@@ -300,6 +304,7 @@ public class AuctionCentral extends Thread {
             int counter = 0;
             for (AuctionCentral t : threads) {
                 if (!t.equals(this) && t.myName.contains("House")) {
+                    System.out.println("TESTA");
                     houses[counter] = t.myName;
                     hasHouse = true;
                     housesAvailable = true;

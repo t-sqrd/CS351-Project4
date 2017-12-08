@@ -87,9 +87,6 @@ public class AuctionHouses extends Thread {
     public void run() {
         try {
 
-
-            System.out.println("Connecting to Agent " + host + " on port " + CENTRAL_PORT + ".");
-
             Message myName = new Message();
             myName.username = houseName.trim();
             myName.newHouse = true;
@@ -99,6 +96,7 @@ public class AuctionHouses extends Thread {
                 while ((request = (Message) fromCentralServer.readObject()) != null) {
 //
                     if (request.getItems) {
+                        System.out.println("Testing");
                         response = new Message();
                         response.username = request.username;
                         response.fromHouse = true;
@@ -107,10 +105,12 @@ public class AuctionHouses extends Thread {
                         for (int i = 0; i < 3; i++) {
                             response.makeStringArray(myItems[i]);
                         }
+                        System.out.println(response.items[0]);
                         response.prices = new double[3];
                         for (int i = 0; i < 3; i++) {
                             response.makeDoubleArray(myPrices[i]);
                         }
+                        System.out.println(response.prices[0]);
                         sendMessage(response);
                     }
                     if (request.placeBid) {
