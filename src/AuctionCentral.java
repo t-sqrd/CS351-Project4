@@ -69,8 +69,7 @@ public class AuctionCentral extends Thread {
         }
         catch (IOException e) {
 
-        }
-        catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {
 
         }
     }
@@ -84,18 +83,13 @@ public class AuctionCentral extends Thread {
                 Message request;
                 Message response;
 
-
-//                nameClients();
                 newHouseListener(newHouse);
                 newHouse = false;
                 while ((request = (Message) fromClient.readObject()) != null) {
 
-
-                    //selectHouse = request.selectHouse;
-
-
                     //getting list of items from house then sending them to the requesting agent
                     if (request.fromHouse) {
+
                         houseResponse(request);
                     }
 
@@ -103,7 +97,7 @@ public class AuctionCentral extends Thread {
                     if (request.register) {
                         response = new Message();
 
-                        //myName = request.agentName;
+                        myName = request.username;
                         convertToInteger(request.username);
 
                         System.out.println("Agent Name = " + myName);
@@ -111,23 +105,22 @@ public class AuctionCentral extends Thread {
                         response.verify = true;
                         response.username = myName;
                         bankBroadcast(response);
+                        Message bankMsg = readFromBank();
 
 
-                        if(readFromBank()){
+                        if (bankMsg.isMember) {
                             Integer key = makeBiddingKey();
                             registeredUsers.put(key, myName);
                             response = new Message();
                             response.biddingKey = key;
                             response.message = "Your account has been activated, Bidding key -> " + key;
-                            agentBroadcast(response);
+                            clientBroadcast(response);
 
-                        }
-                        else{
-                            response = new Message();
-                            response.message = "Bank account not found...";
-                            agentBroadcast(response);
-                        }
+                        } else {
 
+                            //bankMsg.message = "Bank account not found or account is already registered...";
+                            clientBroadcast(bankMsg);
+                        }
 
 
                     }
@@ -139,7 +132,6 @@ public class AuctionCentral extends Thread {
 
 
                     if (request.askForList) {
-
                         sendHouseList();
                     }
 
@@ -150,15 +142,15 @@ public class AuctionCentral extends Thread {
                     }else if (request.selectHouse && !housesAvailable) {
                             Message m = new Message();
                             m.message = "There are no houses available...";
-                            agentBroadcast(m);
+                            clientBroadcast(m);
                     }
-
                 }
-                houseLeavingListener(true);
             }
 
 
-        } catch (IOException e) {
+        }
+
+        catch (IOException e) {
 
 
         } catch (ClassNotFoundException e) {
@@ -168,8 +160,12 @@ public class AuctionCentral extends Thread {
             try {
 
                 System.out.println(myName + " is logging off...");
-                if(this.amHouse) houseId--;
                 threads.remove(this);
+                if(this.amHouse) houseId--;
+                houseLeavingListener(this);
+                fromBank.close();
+                toBank.close();
+                bankSocket.close();
                 fromClient.close();
                 toClient.close();
                 socket.close();
@@ -179,31 +175,30 @@ public class AuctionCentral extends Thread {
                 e.printStackTrace();
             }
 
+
         }
 
     }
 
 
-    private void convertToInteger(String str){
+    private void convertToInteger(String str) {
         String key = "";
         String name = "";
-        for(int i = 0; i < str.length(); i++){
-            if(Character.isDigit(str.charAt(i))){
+        for (int i = 0; i < str.length(); i++) {
+            if (Character.isDigit(str.charAt(i))) {
                 key += str.charAt(i);
-            }
-            else{
+            } else {
                 name += str.charAt(i);
             }
         }
         myName = name;
         clientBankKey = Integer.parseInt(key);
-
     }
 
     private void houseResponse(Message request){
         for (AuctionCentral t : threads) {
             if (t.myName.equals(request.username)) {
-                t.agentBroadcast(request);
+                t.clientBroadcast(request);
             }
         }
 
@@ -214,7 +209,7 @@ public class AuctionCentral extends Thread {
         int counter = 1;
        for(AuctionCentral t : threads){
            if(t.amHouse && counter == houseNumber){
-               t.houseBroadcast(msg);
+               t.clientBroadcast(msg);
                break;
            } else if(t.amHouse){
                counter++;
@@ -232,24 +227,21 @@ public class AuctionCentral extends Thread {
             for (AuctionCentral t : threads) {
                 if (t.myName.contains("Agent")) {
                     msg.message = "New AuctionHouse has entered! -> " + this.myName;
-                    t.agentBroadcast(msg);
+                    t.clientBroadcast(msg);
                     housesAvailable = true;
                 }
             }
         }
 
     }
+    private void houseLeavingListener(AuctionCentral thread) {
 
-    private void houseLeavingListener(boolean leave) {
-        if (leave) {
-            Message msg = new Message();
-            System.out.println("Entered");
-            for (AuctionCentral t : threads) {
-                if (t.myName.contains("Agent")) {
-                    msg.message = "Auction House " + this.myName + " is offline.";
-                    t.agentBroadcast(msg);
-
-                }
+        Message msg = new Message();
+        System.out.println("Entered");
+        for (AuctionCentral t : threads) {
+            if (thread.myName.contains("House") && t.myName.contains("Agent")) {
+                msg.message = thread.myName + " is going offline...";
+                t.clientBroadcast(msg);
             }
         }
     }
@@ -267,28 +259,27 @@ public class AuctionCentral extends Thread {
 
     }
 
-    private boolean readFromBank() throws ClassNotFoundException{
+    private Message readFromBank() throws ClassNotFoundException {
 
+        Message m = new Message();
         try {
 
-            Message m = (Message)fromBank.readObject();
+            m = (Message) fromBank.readObject();
             boolean member = m.isMember;
 
             System.out.println(member);
 
             System.out.println(m.message);
-            return m.isMember;
-        }
-        catch(IOException e){
+            return m;
+        } catch (IOException e) {
 
         }
-        return false;
+        return m;
 
 
     }
 
-
-    private void agentBroadcast(Message msg) {
+    private void clientBroadcast(Message msg) {
         try {
 
             toClient.writeObject(msg);
@@ -297,15 +288,6 @@ public class AuctionCentral extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
 
-        }
-    }
-
-    private void houseBroadcast(Message msg) {
-        try {
-            toClient.writeObject(msg);
-            toClient.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -326,12 +308,12 @@ public class AuctionCentral extends Thread {
             }
             if(hasHouse){
                 send.houses = houses;
-                agentBroadcast(send);
+                clientBroadcast(send);
             } else {
                 Message msg = new Message();
                 msg.message = "No Auction Houses are online right now";
                 housesAvailable = false;
-                agentBroadcast(msg);
+                clientBroadcast(msg);
             }
         }
 

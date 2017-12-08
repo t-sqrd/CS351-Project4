@@ -73,37 +73,37 @@ public class TestServer extends Thread {
 
         return biddingNum;
     }
-    
+
 
     public void run(){
 
-            InputStream in = null;
-            OutputStream out = null;
+        InputStream in = null;
+        OutputStream out = null;
 
-            try {
-                in = socket.getInputStream();
-                out = socket.getOutputStream();
+        try {
+            in = socket.getInputStream();
+            out = socket.getOutputStream();
 
-                //DataOutputStream accountInfoOut = new DataOutputStream(out);
-               // DataOutputStream serverOut = new DataOutputStream(out);
+            //DataOutputStream accountInfoOut = new DataOutputStream(out);
+            // DataOutputStream serverOut = new DataOutputStream(out);
 
 
-                ObjectOutputStream clientOut = new ObjectOutputStream(out);
+            ObjectOutputStream clientOut = new ObjectOutputStream(out);
 
-                ObjectInputStream serverIn = new ObjectInputStream(in);
+            ObjectInputStream serverIn = new ObjectInputStream(in);
 
-                Message temp;
+            Message temp;
 
-                while ((temp = (Message)serverIn.readObject()) != null) {
-                    System.out.println("ENTERED");
-                    System.out.println(temp.newAccount);
-                    if (temp.newAccount) {
-                        //bank.start();
+            while ((temp = (Message)serverIn.readObject()) != null) {
+                System.out.println("ENTERED");
+                System.out.println(temp.newAccount);
+                if (temp.newAccount) {
+                    //bank.start();
 
-                    }
+                }
 
-                    clientOut.writeObject(temp);
-                    clientOut.flush();
+                clientOut.writeObject(temp);
+                clientOut.flush();
 
 
 
@@ -135,7 +135,7 @@ public class TestServer extends Thread {
 //
 //                    }
 
-                  //  serverOut.writeBytes(request + '\n');
+                //  serverOut.writeBytes(request + '\n');
 
 
 
@@ -151,17 +151,17 @@ public class TestServer extends Thread {
 //
 //                    accountInfoOut.writeBytes(infoMessage);
 //                    infoMessage = "";
-                }
-
             }
 
-            catch(ClassNotFoundException e){
+        }
 
-            }
+        catch(ClassNotFoundException e){
 
-            catch (IOException ex) {
+        }
 
-                System.out.println("Unable to get streams from client");
+        catch (IOException ex) {
+
+            System.out.println("Unable to get streams from client");
 //            } finally {
 //                try {
 //                    in.close();
@@ -172,7 +172,7 @@ public class TestServer extends Thread {
 //                    ex.printStackTrace();
 //                }
 //            }
-            }
+        }
 
 
     }
@@ -202,7 +202,7 @@ public class TestServer extends Thread {
                  * this will allow multiple client connections
                  */
                 new TestServer(server.accept());
-           }
+            }
 
         } catch (IOException ex) {
             System.out.println("Unable to start server.");
@@ -216,4 +216,3 @@ public class TestServer extends Thread {
         }
     }
 }
-

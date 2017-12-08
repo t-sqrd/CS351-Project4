@@ -17,7 +17,7 @@ public class Message implements Serializable {
     boolean HOUSE_LEAVING;
 
     boolean askForList, getItems, houseList, isItems;
-    boolean fromHouse, register;
+    boolean fromHouse, register, moveFunds;
     boolean selectHouse;
     boolean placeBid, verify, isMember, fromBank;
     boolean newHouse, newUser, invalidBid, test;

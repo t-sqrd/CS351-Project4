@@ -3,6 +3,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
@@ -29,55 +30,66 @@ public class Agent extends Thread {
 
     BufferedReader stdin;
 
-    public static  volatile boolean changeServer;
-
-
-
-
 
     public static void main(String args[]) {
 
+        ArrayList<Integer> online = new ArrayList<>();
+        Random rand = new Random();
+        Integer user = rand.nextInt(10000);
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Please Enter Name: ");
-        String name = scanner.nextLine();
-        if(name != null){
-            new Agent(name);
+//        System.out.println("Please Enter Name: ");
+//
+//        String name = scanner.nextLine();
+//        if (name != null && !online.contains(Integer.parseInt(name))) {
+//            System.out.println("Welcome Agent " + name + "!");
+//            online.add(user);
+//            new Agent(name);
+//        }
+//        else{
+//            System.out.println("Entered Else");
+//        }
+        if(!online.contains(user)){
+            System.out.println("Welcome Agent #" + user + "!");
+            new Agent(Integer.toString(user));
         }
 
     }
 
-    public Agent(String userName){
+    public Agent(String userName) {
 
-        this.agentName = "Agent " + userName;
+        try{
+            bankSocket = new Socket(host, BANK_PORT);
+            centralSocket = new Socket(host, CENTRAL_PORT);
+            bankSocket.connect(centralSocket.getLocalSocketAddress());
+        }
+        catch (IOException e){
 
+        }
+
+        this.agentName = "Agent " + bankSocket.getLocalPort();
         start();
-
-
 
     }
 
 
-
-
-
-    private void sendMsgToCentral(Message msg){
-        try{
+    private void sendMsgToCentral(Message msg) {
+        try {
             toCentralServer.writeObject(msg);
             toCentralServer.flush();
 
-        }
-        catch(IOException e){
+
+        } catch (IOException e) {
 
         }
 
     }
 
-    private void sendMsgToBank(Message msg){
+    private void sendMsgToBank(Message msg) {
         try {
             toBankServer.writeObject(msg);
             toBankServer.flush();
-        }
-        catch(IOException e){
+
+        } catch (IOException e) {
 
         }
     }
@@ -124,10 +136,6 @@ public class Agent extends Thread {
            System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
            System.out.println(options);
 
-            bankSocket = new Socket(host, BANK_PORT);
-            centralSocket = new Socket(host, CENTRAL_PORT);
-
-
 
 
             try {
@@ -140,6 +148,7 @@ public class Agent extends Thread {
 
                 new ListenFromServer(fromBankServer, "Bank").start();
                 new ListenFromServer(fromCentralServer, "Central").start();
+
 
                 stdin = new BufferedReader(new InputStreamReader(System.in));
 
@@ -160,7 +169,7 @@ public class Agent extends Thread {
 
             String ui;
 
-           boolean registered = false;
+            boolean registered = false;
 
             while((ui = stdin.readLine().toLowerCase()) != null) {
 
@@ -173,30 +182,31 @@ public class Agent extends Thread {
                     sendMsgToCentral(msg);
                     isRunning = false;
                     break;
+
                 } else if (ui.equalsIgnoreCase("Make Account")) {
 
                     System.out.println("Please Enter Name: ");
                     if ((ui = stdin.readLine()) != null) {
                         Message request = new Message();
                         request.newAccount = true;
+                        this.agentName = ui;
                         request.username = ui;
                         sendMsgToBank(request);
-                        registered = true;
                     }
+
                 } else if (ui.equalsIgnoreCase("Register")) {
 
                     System.out.println("Please Provide Name and Bank Key: ");
                     if ((ui = stdin.readLine()) != null) {
-                        String temp = ui;
                         Message request = new Message();
                         request.register = true;
                         request.username = ui;
-
                         registered = true;
                         sendMsgToCentral(request);
+
                     }
 
-                } else if (ui.contains("vi") ){//&& registered) {
+                } else if (ui.equals("View Houses") && registered) {
 
                     Message request = new Message();
                     request.message = "View";
@@ -216,7 +226,6 @@ public class Agent extends Thread {
 
 
                         sendMsgToCentral(request);
-
                     }
                 } else if (ui.contains("bi")) {
                     Message bid = new Message();
@@ -244,8 +253,11 @@ public class Agent extends Thread {
                     test.selectedHouse = "1";
                     sendMsgToCentral(test);
                 }
-                else{
+
+                else {
                     System.out.println("Please try again...");
+                    if(!registered)
+                    System.out.println("You may still need to register or create an account...");
                 }
 
 
@@ -260,8 +272,7 @@ public class Agent extends Thread {
                 bankSocket.close();
                 centralSocket.close();
 
-            }
-            catch(InterruptedException e){
+            } catch (InterruptedException e) {
 
             }
 
@@ -322,10 +333,10 @@ public class Agent extends Thread {
                     }
                 }
 
-                catch(IOException e) {
+                catch (IOException e) {
 
                 }
-                catch(ClassNotFoundException ex){
+                catch (ClassNotFoundException ex) {
 
                 }
 

@@ -11,6 +11,7 @@ import java.util.*;
 public class AuctionHouses extends Thread {
 
     private int CENTRAL_PORT = 8081;
+    private int PORT_NUMBER = 4200;
     private String host = "127.0.0.1";
     private static String[] items = new String[1000];
     private static double[] prices = new double[1000];
@@ -24,10 +25,7 @@ public class AuctionHouses extends Thread {
     private static double[] myPrices = new double[3];
 
     public static void main(String[] args) {
-        Scanner in = new Scanner(System.in);
-        System.out.println("Enter Name");
-        String name = in.nextLine();
-        new AuctionHouses(name);
+        new AuctionHouses();
     }
 
     private void addItems() {
@@ -55,29 +53,36 @@ public class AuctionHouses extends Thread {
         }
     }
 
-    public AuctionHouses(String name) {
+    public AuctionHouses() {
+
+        System.out.println("Connecting to Agent " + host + " on port " + CENTRAL_PORT + ".");
 
         if (!read) {
             addItems();
             read = true;
         }
 
-        this.houseName = name;
-
         try {
 
 
             centralSocket = new Socket(host, CENTRAL_PORT);
+
+            this.houseName = "House #" + centralSocket.getLocalPort();
+
             toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
             fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
 
 
+        } catch (UnknownHostException e) {
+            System.err.println("Unknown host: " + host);
+            System.exit(1);
         } catch (IOException e) {
-
+            System.err.println("Unable to get streams from server in Auction houses");
+            System.exit(1);
         }
         start();
-    }
 
+    }
 
     public void run() {
         try {
@@ -150,16 +155,16 @@ public class AuctionHouses extends Thread {
         }
     }
 
-    private void sendMessage(Message msg) {
-        try {
+    private void sendMessage(Message msg){
+        try{
             toCentralServer.writeObject(msg);
             toCentralServer.flush();
-        } catch (IOException e) {
+        }
+        catch (IOException e){
 
         }
     }
 }
-
 
 
 
