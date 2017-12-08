@@ -42,6 +42,7 @@ public class AuctionCentral extends Thread {
     public Socket bankSocket;
 
 
+
     public AuctionCentral(Socket socket) {
         this.socket = socket;
 
@@ -76,8 +77,6 @@ public class AuctionCentral extends Thread {
                 Message request;
                 Message response;
 
-
-//                nameClients();
                 newHouseListener(newHouse);
                 newHouse = false;
                 while ((request = (Message) fromClient.readObject()) != null) {
