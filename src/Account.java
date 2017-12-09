@@ -6,7 +6,7 @@ public class Account{
 
     public boolean isRegistered;
     public Integer hasHold;
-    private String clientName;
+    public String clientName;
     private static ArrayList<Integer> usedAccountNumbers = new ArrayList<>();
     private static ArrayList<Integer> usedBankKeys = new ArrayList<>();
 
@@ -23,7 +23,6 @@ public class Account{
     public Account(String clientName){
         this.clientName = clientName;
         this.initAccount();
-        tempBalance = balance;
         System.out.println("Account ["+clientName+"] has been created...");
 
     }
@@ -110,6 +109,7 @@ public class Account{
         this.bankKey = makeBankKey();
         this.initialDeposit = 30000;
         this.balance = initialDeposit;
+        tempBalance = balance;
 
     }
 

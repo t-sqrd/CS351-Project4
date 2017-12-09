@@ -61,6 +61,8 @@ public class Bank extends Thread {
 
                     while ((request = (Message) fromClient.readObject()) != null) {
 
+                        System.out.println("TESTING FIRST");
+
                         if (request.newAccount) {
                             makeAccount(request);
                             printAllClients();
@@ -97,16 +99,18 @@ public class Bank extends Thread {
 
 
 
-                            for(Integer i : bankMap.keySet()){
-                                System.out.println("KEYS = " + i);
+                            for(Account i : bankMap.values()){
+                                System.out.println("Account = " + i.clientName);
                             }
 
+                        }
+                        if(request.isOver){
+                            System.out.println("TESTING");
+                            placeHold(request);
                         }
 
                         if(request.placeHold){
                             System.out.println("ENTER PLACE HOLD");
-
-
                             placeHold(request);
 
                         }
@@ -151,15 +155,20 @@ public class Bank extends Thread {
         Integer amount = request.bidAmount;
         System.out.println("bankkey->" +bankKey);
         System.out.println("Amount->" + amount);
+        System.out.println(request.username);
 
         if(bankMap.containsKey(bankKey)) {
             System.out.println("ENTERED");
             Account account = bankMap.get(bankKey);
-            Message response = account.placeHoldOnAccount(request);
-            response.username = request.username;
-            response.fromBank = true;
-            response.toUser = true;
-            sendMessage(response);
+
+            if(account != null) {
+                Message response = account.placeHoldOnAccount(request);
+                System.out.println("A " + response.username + " " + response.message);
+                response.username = request.username;
+                response.fromBank = true;
+                response.toUser = true;
+                sendMessage(response);
+            }
 
         }
     }
@@ -178,6 +187,8 @@ public class Bank extends Thread {
 
     private void sendMessage(Message msg) {
         try {
+
+            System.out.println(msg.username + " " + msg.message);
 
             toClient.writeObject(msg);
             toClient.flush();

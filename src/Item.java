@@ -40,6 +40,10 @@ public class Item extends Thread {
         return price;
     }
 
+    public String returnBidder(){
+        return topBidder;
+    }
+
     public int returnTime() {
         if(timer != null && timer.isAlive()){
             return timer.returnTime();

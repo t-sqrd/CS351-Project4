@@ -20,7 +20,7 @@ public class AuctionCentral extends Thread {
     Socket socket;
     public ObjectOutputStream toClient;
     public ObjectInputStream fromClient;
-    boolean sendlist, newHouse, selectHouse;
+    boolean sendlist, newHouse, selectHouse, listener;
     boolean housesAvailable, houseLeaving, amHouse;
     volatile boolean KILL;
     volatile boolean KILL_HOUSE = false;
@@ -45,6 +45,9 @@ public class AuctionCentral extends Thread {
     public Bank b;
     public Socket bankSocket;
 
+    public AuctionCentral(boolean listener) {
+        this.listener = listener;
+    }
 
     public AuctionCentral(Socket socket) {
         this.socket = socket;
@@ -66,9 +69,7 @@ public class AuctionCentral extends Thread {
             this.newHouse = user.newHouse;
 
 
-
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
 
         } catch (ClassNotFoundException e) {
 
@@ -77,132 +78,162 @@ public class AuctionCentral extends Thread {
 
     public void run() {
 
-
-        try {
-
+        if (listener) {
             while (!KILL) {
-                Message request;
-                Message response;
+                int counter = 0;
+                for (int i = 0; i < threads.size(); i++) {
+                    if (threads.get(i).newHouse || threads.get(i).amHouse) {
+                        counter++;
+                        String casted = String.valueOf(counter);
+                        Message msg = new Message();
+                        msg.notification = true;
+                        threads.get(i).communicationBeta(msg, casted);
+                    }
+                }
+                try {
+                    sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
 
-                newHouseListener(newHouse);
-                newHouse = false;
-                while ((request = (Message) fromClient.readObject()) != null) {
+            try {
 
-                    //getting list of items from house then sending them to the requesting agent
-                    if (request.fromHouse) {
-                        houseResponse(request);
+                while (!KILL) {
+                    Message request;
+                    Message response;
+
+                    newHouseListener(newHouse);
+                    newHouse = false;
+                    while ((request = (Message) fromClient.readObject()) != null) {
+
+                        //getting list of items from house then sending them to the requesting agent
+                        if (request.fromHouse) {
+                            houseResponse(request);
+                            if(request.isOver){
+                                Message msg = new Message();
+                                msg.username = request.username;
+                                msg.placeHold = true;
+                                msg.isOver = true;
+                                msg.WON = true;
+                                msg.bankKey = keys.get(request.biddingKey);
+                                msg.bidAmount = request.bidAmount;
+                                bankBroadcast(msg);
+                                houseResponse(readFromBank());
+
+                            }
+                            if (request.houseList) houseResponse(request);
+
+                            if (request.placeBid) {
+
+                                Message msg = new Message();
+                                msg.username = request.username;
+                                msg.placeHold = true;
+                                msg.bankKey = keys.get(request.biddingKey);
+                                msg.bidAmount = request.bidAmount;
+                                bankBroadcast(msg);
+                                houseResponse(readFromBank());
+                            }
 
 
-                        if(request.houseList) houseResponse(request);
+                        }
 
-                        if (request.placeBid) {
-
-                            Message msg = new Message();
-                            msg.username = request.username;
-                            msg.placeHold = true;
-                            msg.bankKey = keys.get(request.biddingKey);
-                            msg.bidAmount = request.bidAmount;
-                            bankBroadcast(msg);
-                            houseResponse(readFromBank());
+                        if (request.notification) {
+                            communicationBeta(request, request.selectedHouse);
                         }
 
 
-                    }
-
-                    if(request.notification){
-                        communicationBeta(request, request.selectedHouse);
-                    }
-
-
-                    if (request.register) {
-                        response = new Message();
-
-                        myName = request.username;
-                        convertToInteger(request.username);
-
-                        System.out.println("Agent Name = " + myName);
-                        response.bankKey = clientBankKey;
-                        response.verify = true;
-                        response.username = myName;
-                        bankBroadcast(response);
-                        Message bankMsg = readFromBank();
-
-
-                        if (bankMsg.isMember) {
-                            Integer biddingKey = makeBiddingKey();
-                            keys.put(biddingKey, clientBankKey);
-                            registeredUsers.put(keys, myName);
+                        if (request.register) {
                             response = new Message();
-                            response.biddingKey = biddingKey;
-                            response.message = "Your account has been activated, Bidding key -> " + biddingKey;
-                            clientBroadcast(response);
 
-                        } else {
+                            myName = request.username;
+                            convertToInteger(request.username);
 
-                            bankMsg.message = "Bank account not found or account is already registered...";
-                            clientBroadcast(bankMsg);
+                            response.bankKey = clientBankKey;
+                            response.verify = true;
+                            response.username = myName;
+                            bankBroadcast(response);
+                            Message bankMsg = readFromBank();
+
+
+                            if (bankMsg.isMember) {
+                                Integer biddingKey = makeBiddingKey();
+                                keys.put(biddingKey, clientBankKey);
+                                registeredUsers.put(keys, myName);
+                                response = new Message();
+                                response.biddingKey = biddingKey;
+                                response.message = "Your account has been activated, Bidding key -> " + biddingKey;
+                                clientBroadcast(response);
+
+                            } else {
+
+                                bankMsg.message = "Bank account not found or account is already registered...";
+                                clientBroadcast(bankMsg);
+                            }
+
+
+                        }
+
+                        if (request.isMember) {
+                            System.out.println("HERE");
+                            System.out.println(request.message);
                         }
 
 
-                    }
-
-                    if (request.isMember) {
-                        System.out.println("HERE");
-                        System.out.println(request.message);
-                    }
-
-
-                    if (request.askForList) {
-                        sendHouseList();
-                    }
-
-                    if (request.selectHouse && housesAvailable) {
-                        communicationBeta(request, request.selectedHouse);
-
-
-                    }else if (request.selectHouse && !housesAvailable) {
-                            Message m = new Message();
-                            m.message = "There are no houses available...";
-                            clientBroadcast(m);
+                        if (request.askForList) {
+                            sendHouseList();
+                        }
+                        if (request.fromBank && request.toUser) {
+                            System.out.println("ENTERED new if");
+                            houseResponse(request);
                         }
 
-                    }
-                    if(request.fromBank && request.toUser){
-                        System.out.println("ENTERED new if");
-                        houseResponse(request);
+                        if (request.selectHouse) {
+                            if(housesAvailable)
+                                communicationBeta(request, request.selectedHouse);
+
+                            else{
+                                Message m = new Message();
+                                m.message = "There are no houses available...";
+                                clientBroadcast(m);
+                            }
+
+                        }
+
+
                     }
 
                 }
-            }
-
-        catch (IOException e) {
-
-
-        } catch (ClassNotFoundException e) {
-
-
-        } finally {
-            try {
-
-                System.out.println(myName + " is logging off...");
-                threads.remove(this);
-                if (this.amHouse) houseId--;
-                houseLeavingListener(this);
-                fromBank.close();
-                toBank.close();
-                bankSocket.close();
-                fromClient.close();
-                toClient.close();
-                socket.close();
-
 
             } catch (IOException e) {
-                e.printStackTrace();
+
+
+            } catch (ClassNotFoundException e) {
+
+
+            } finally {
+                try {
+
+                    System.out.println(myName + " is logging off...");
+                    threads.remove(this);
+                    if (this.amHouse) houseId--;
+                    houseLeavingListener(this);
+                    fromBank.close();
+                    toBank.close();
+                    bankSocket.close();
+                    fromClient.close();
+                    toClient.close();
+                    socket.close();
+
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
             }
-
-
         }
-
     }
 
 
@@ -224,7 +255,6 @@ public class AuctionCentral extends Thread {
 
     private void houseResponse(Message request) {
         for (AuctionCentral t : threads) {
-            System.out.println(t.myName + " " + request.username);
             if (t.myName.equals(request.username)) {
                 t.clientBroadcast(request);
             }
@@ -261,10 +291,10 @@ public class AuctionCentral extends Thread {
         }
 
     }
+
     private void houseLeavingListener(AuctionCentral thread) {
 
         Message msg = new Message();
-        System.out.println("Entered");
         for (AuctionCentral t : threads) {
             if (thread.myName.contains("House") && t.myName.contains("Agent")) {
                 msg.message = thread.myName + " is going offline...";
@@ -329,7 +359,7 @@ public class AuctionCentral extends Thread {
                     counter++;
                 }
             }
-            if(hasHouse){
+            if (hasHouse) {
                 send.houses = houses;
                 clientBroadcast(send);
             } else {
@@ -439,6 +469,9 @@ public class AuctionCentral extends Thread {
         ServerSocket fromHouse = null;
         try {
             fromAgent = new ServerSocket(CENTER_PORT);
+            System.out.println("Testing");
+            AuctionCentral listener = new AuctionCentral(true);
+            listener.start();
             while (true) {
                 AuctionCentral c = new AuctionCentral(fromAgent.accept());
                 threads.add(c);

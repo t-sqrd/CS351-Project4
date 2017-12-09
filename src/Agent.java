@@ -308,7 +308,7 @@ public class Agent extends Thread {
        }
 
        public void printItems(String[] items, double[] prices, int[] timeLeft){
-           System.out.println("itemPack from this house:");
+           System.out.println("Items from this house:");
            DecimalFormat format = new DecimalFormat("0.00");
            for(int i = 0; i < items.length; i++){
                String price = format.format(prices[i]);
@@ -337,8 +337,6 @@ public class Agent extends Thread {
 
                     if (server != null) {
                         if(server.isItems){
-                            System.out.println("Is Items: " + server.items[0]);
-                            System.out.println(server.timeLeft[0]);
                             printItems(server.items, server.prices, server.timeLeft);
                         } else if(server.houseList) {
                             printHouses(server.houses);

@@ -21,6 +21,7 @@ public class AuctionHouses extends Thread {
     private Socket centralSocket;
     private String houseName;
     private BufferedReader reader;
+    private int counter = 0;
     private static String[] myItems = new String[3];
     private static double[] myPrices = new double[3];
     private ArrayList<Item> itemsMain = new ArrayList<>();
@@ -34,7 +35,6 @@ public class AuctionHouses extends Thread {
         try {
             String str;
             double dbl;
-            int counter = 0;
             while ((str = reader.readLine()) != null) {
                 String[] vals = str.split(";");
                 str = vals[0];
@@ -96,7 +96,7 @@ public class AuctionHouses extends Thread {
             while (centralSocket.isConnected()) {
                 Message request, response;
                 while ((request = (Message) fromCentralServer.readObject()) != null) {
-//
+
                     if (request.getItems) {
                         response = new Message();
                         response.username = request.username;
@@ -122,6 +122,7 @@ public class AuctionHouses extends Thread {
                     if (request.placeBid) {
                         response = new Message();
                         response.username = request.username;
+                        response.bidAmount = request.bidAmount;
                         response.fromHouse = true;
                         response.placeBid = true;
                         response.biddingKey = request.biddingKey;
@@ -145,14 +146,29 @@ public class AuctionHouses extends Thread {
                         sendMessage(response);
                     }
                     if (request.notification) {
-                        System.out.println("Item Sold!");
-                    }
-//                    for(int i = 0; i < itemsMain.size(); i++){
-//                        if(itemsMain.get(i).returnTime() == -5){
-//                            System.out.println("Here");
-//                        }
-//                    }
+                        for(int i = 0; i < itemsMain.size(); i++){
+                            if(itemsMain.get(i).returnTime() == -5) {
+                                String user = itemsMain.get(i).returnBidder();
+                                double price = itemsMain.get(i).returnPrice();
+                                itemsMain.remove(i);
+                                Message response1 = new Message();
+                                response1.username = user;
+                                response1.bidAmount = (int) price;
+                                response1.isOver = true;
+                                response1.placeHold = true;
+                                response1.fromHouse = true;
+                                response1.WON = true;
 
+                                Random rand = new Random();
+                                int z = rand.nextInt(counter);
+                                itemsMain.add(new Item(items[z], prices[z], this));
+
+                                System.out.println(user);
+
+                                sendMessage(response1);
+                            }
+                        }
+                    }
                 }
             }
             Message kill = new Message();
