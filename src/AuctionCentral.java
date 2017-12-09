@@ -230,7 +230,7 @@ public class AuctionCentral extends Thread {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
+            }
 
         }
     }
