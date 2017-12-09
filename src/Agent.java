@@ -223,8 +223,6 @@ public class Agent extends Thread {
                         request.selectHouse = true;
                         request.username = agentName;
                         request.getItems = true;
-
-
                         sendMsgToCentral(request);
                     }
                 } else if (ui.contains("bi")) {
@@ -294,12 +292,16 @@ public class Agent extends Thread {
            this.serverName = serverName;
        }
 
-       public void printItems(String[] items, double[] prices){
+       public void printItems(String[] items, double[] prices, int[] timeLeft){
            System.out.println("itemPack from this house:");
            DecimalFormat format = new DecimalFormat("0.00");
            for(int i = 0; i < items.length; i++){
                String price = format.format(prices[i]);
-               System.out.println("   " + (i+1) + ") " + items[i] + " $" + price);
+               if(timeLeft[i] > -1){
+                   System.out.println("   " + (i + 1) + ") " + items[i] + " $" + price + " | Time Left: " + timeLeft[i]);
+               } else {
+                   System.out.println("   " + (i + 1) + ") " + items[i] + " $" + price);
+               }
            }
        }
 
@@ -321,13 +323,14 @@ public class Agent extends Thread {
                     if (server != null) {
                         if(server.isItems){
                             System.out.println("Is Items: " + server.items[0]);
-                            printItems(server.items, server.prices);
+                            System.out.println(server.timeLeft[0]);
+                            printItems(server.items, server.prices, server.timeLeft);
                         } else if(server.houseList) {
                             printHouses(server.houses);
                         } else if(server.placeBid){
                             if(server.invalidBid) System.out.println("Your bid must be higher than the existing bid!");
                             else System.out.println("Your bid was successful!");
-                            printItems(server.items, server.prices);
+                            printItems(server.items, server.prices, server.timeLeft);
                         } else {
                             System.out.println(serverName + " > " + server.message);
                         }

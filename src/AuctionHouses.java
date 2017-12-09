@@ -20,11 +20,15 @@ public class AuctionHouses extends Thread {
     private ObjectInputStream fromCentralServer;
     private Socket centralSocket;
     private String houseName;
+    private boolean listener;
+    private AuctionHouses parent;
     private BufferedReader reader;
     private static String[] myItems = new String[3];
     private static double[] myPrices = new double[3];
+    private ArrayList<Item> itemsMain = new ArrayList<>();
 
     public static void main(String[] args) {
+
         new AuctionHouses();
     }
 
@@ -45,9 +49,11 @@ public class AuctionHouses extends Thread {
             Random rand = new Random();
             for (int i = 0; i < myItems.length; i++) {
                 int z = rand.nextInt(counter);
+                itemsMain.add(new Item(items[z], prices[z], this));
                 myItems[i] = items[z];
                 myPrices[i] = prices[z];
             }
+
         } catch (IOException e) {
             System.out.println("File not found.");
         }
@@ -93,24 +99,27 @@ public class AuctionHouses extends Thread {
             sendMessage(myName);
             while (centralSocket.isConnected()) {
                 Message request, response;
-                while ((request = (Message) fromCentralServer.readObject()) != null) {
-//
+                while ((request = (Message) fromCentralServer.readObject()) != null && checkTimers()) {
                     if (request.getItems) {
-                        System.out.println("Testing");
                         response = new Message();
                         response.username = request.username;
                         response.fromHouse = true;
                         response.isItems = true;
                         response.items = new String[3];
+                        response.timeLeft = new int[3];
                         for (int i = 0; i < 3; i++) {
-                            response.makeStringArray(myItems[i]);
+                            response.makeStringArray((itemsMain.get(i)).returnName());
+                            System.out.println(itemsMain.get(i).timerStarted);
+                            if (itemsMain.get(i).timerStarted) {
+                                response.makeTimerArray(itemsMain.get(i).returnTime());
+                            } else {
+                                response.makeTimerArray(-1);
+                            }
                         }
-                        System.out.println(response.items[0]);
                         response.prices = new double[3];
                         for (int i = 0; i < 3; i++) {
-                            response.makeDoubleArray(myPrices[i]);
+                            response.makeDoubleArray((itemsMain.get(i)).returnPrice());
                         }
-                        System.out.println(response.prices[0]);
                         sendMessage(response);
                     }
                     if (request.placeBid) {
@@ -118,23 +127,36 @@ public class AuctionHouses extends Thread {
                         response.username = request.username;
                         response.fromHouse = true;
                         response.placeBid = true;
-                        if (myPrices[request.index] < request.bidAmount) {
-                            myPrices[request.index] = request.bidAmount;
-                        } else {
+                        if (!itemsMain.get(request.index).placeBid(request.bidAmount, request.username)) {
                             response.invalidBid = true;
                         }
                         response.items = new String[3];
+                        response.timeLeft = new int[3];
                         for (int i = 0; i < 3; i++) {
-                            response.makeStringArray(myItems[i]);
+                            response.makeStringArray(itemsMain.get(i).returnName());
+                            if (itemsMain.get(i).timerStarted) {
+                                response.makeTimerArray(itemsMain.get(i).returnTime());
+                            } else {
+                                response.makeTimerArray(-1);
+                            }
                         }
                         response.prices = new double[3];
                         for (int i = 0; i < 3; i++) {
-                            response.makeDoubleArray(myPrices[i]);
+                            response.makeDoubleArray(itemsMain.get(i).returnPrice());
                         }
                         sendMessage(response);
                     }
+                    if (request.notification) {
+                        System.out.println("Item Sold!");
+                    }
+//                    for(int i = 0; i < itemsMain.size(); i++){
+//                        if(itemsMain.get(i).returnTime() == -5){
+//                            System.out.println("Here");
+//                        }
+//                    }
 
                 }
+
             }
             Message kill = new Message();
             kill.KILL = true;
@@ -155,14 +177,22 @@ public class AuctionHouses extends Thread {
         }
     }
 
-    private void sendMessage(Message msg){
-        try{
+    private void sendMessage(Message msg) {
+        try {
             toCentralServer.writeObject(msg);
             toCentralServer.flush();
-        }
-        catch (IOException e){
+        } catch (IOException e) {
 
         }
+    }
+
+    private boolean checkTimers(){
+        for(int i = 0; i < itemsMain.size(); i++){
+            if(itemsMain.get(i).returnTime() == -5){
+                System.out.println("Died");
+            }
+        }
+        return true;
     }
 }
 

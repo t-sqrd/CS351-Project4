@@ -18,18 +18,19 @@ public class Message implements Serializable {
 
     boolean askForList, getItems, houseList, isItems;
     boolean fromHouse, register, moveFunds;
-    boolean selectHouse;
+    boolean selectHouse, notification;
     boolean placeBid, verify, isMember, fromBank;
     boolean newHouse, newUser, invalidBid, test;
-    int test2, test3;
     Integer biddingKey, bankKey, index, bidAmount;
     String message, selectedHouse;
     String[] items;
     String[] houses;
     double[] prices;
+    int[] timeLeft;
 
     int counterD = 0;
     int counterS = 0;
+    int counterT = 0;
 
 
     public Message(){}
@@ -42,6 +43,11 @@ public class Message implements Serializable {
     public void makeStringArray(String item){
         items[counterS] = item;
         counterS++;
+    }
+
+    public void makeTimerArray(int timer){
+        timeLeft[counterT] = timer;
+        counterT++;
     }
 
     public String getMessage(){

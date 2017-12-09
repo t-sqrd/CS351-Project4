@@ -90,8 +90,11 @@ public class AuctionCentral extends Thread {
 
                     //getting list of items from house then sending them to the requesting agent
                     if (request.fromHouse) {
-
                         houseResponse(request);
+                    }
+
+                    if(request.notification){
+                        communicationBeta(request, request.selectedHouse);
                     }
 
 
@@ -133,7 +136,6 @@ public class AuctionCentral extends Thread {
 
 
                     if (request.askForList) {
-                        System.out.println("Here");
                         sendHouseList();
                     }
 
@@ -201,7 +203,6 @@ public class AuctionCentral extends Thread {
         for (AuctionCentral t : threads) {
             System.out.println(t.myName + " " + request.username);
             if (t.myName.equals(request.username)) {
-                System.out.println("IN RESPONSE: " + request.items[0]);
                 t.clientBroadcast(request);
             }
         }
@@ -304,7 +305,6 @@ public class AuctionCentral extends Thread {
             int counter = 0;
             for (AuctionCentral t : threads) {
                 if (!t.equals(this) && t.myName.contains("House")) {
-                    System.out.println("TESTA");
                     houses[counter] = t.myName;
                     hasHouse = true;
                     housesAvailable = true;
@@ -421,10 +421,7 @@ public class AuctionCentral extends Thread {
         ServerSocket fromHouse = null;
         try {
             fromAgent = new ServerSocket(CENTER_PORT);
-
             while (true) {
-
-
                 AuctionCentral c = new AuctionCentral(fromAgent.accept());
                 threads.add(c);
                 c.start();
