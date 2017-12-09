@@ -147,8 +147,8 @@ public class AuctionCentral extends Thread {
                         if (request.register) {
                             response = new Message();
 
-                            myName = request.username;
-                            convertToInteger(request.username);
+                        myName = request.username;
+                        clientBankKey = request.bankKey;
 
                             response.bankKey = clientBankKey;
                             response.verify = true;
@@ -168,9 +168,9 @@ public class AuctionCentral extends Thread {
 
                             } else {
 
-                                bankMsg.message = "Bank account not found or account is already registered...";
-                                clientBroadcast(bankMsg);
-                            }
+                           // bankMsg.message = "Bank account not found or account is already registered...";
+                            clientBroadcast(bankMsg);
+                        }
 
 
                         }
@@ -232,26 +232,25 @@ public class AuctionCentral extends Thread {
                 }
 
 
-            }
         }
     }
 
 
-    private void convertToInteger(String str) {
-        String key = "";
-        String name = "";
-        boolean safe = false;
-        for (int i = 0; i < str.length(); i++) {
-            if (Character.isDigit(str.charAt(i))) {
-                key += str.charAt(i);
-                safe = true;
-            } else {
-                name += str.charAt(i);
-            }
-        }
-        myName = name.trim();
-        clientBankKey = Integer.parseInt(key);
-    }
+//    private void convertToInteger(String str) {
+//        String key = "";
+//        String name = "";
+//        boolean safe = false;
+//        for (int i = 0; i < str.length(); i++) {
+//            if (Character.isDigit(str.charAt(i))) {
+//                key += str.charAt(i);
+//                safe = true;
+//            } else {
+//                name += str.charAt(i);
+//            }
+//        }
+//        myName = name.trim();
+//        clientBankKey = Integer.parseInt(key);
+//    }
 
     private void houseResponse(Message request) {
         for (AuctionCentral t : threads) {
@@ -291,7 +290,6 @@ public class AuctionCentral extends Thread {
         }
 
     }
-
     private void houseLeavingListener(AuctionCentral thread) {
 
         Message msg = new Message();
@@ -359,7 +357,7 @@ public class AuctionCentral extends Thread {
                     counter++;
                 }
             }
-            if (hasHouse) {
+            if(hasHouse){
                 send.houses = houses;
                 clientBroadcast(send);
             } else {

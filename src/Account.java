@@ -4,7 +4,7 @@ import java.util.Random;
 
 public class Account{
 
-    public boolean isRegistered;
+    public boolean isRegistered = false;
     public Integer hasHold;
     public String clientName;
     private static ArrayList<Integer> usedAccountNumbers = new ArrayList<>();

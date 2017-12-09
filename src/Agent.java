@@ -20,6 +20,7 @@ public class Agent extends Thread {
     private static String options = "*** Options : Make Account / View Houses / Register / Select House / Place Bid ***";
     public int myKey;
     private ArrayList<ListenFromServer> servers = new ArrayList<>();
+    private static String userInfo;
     private Encrypt encrypt;
     Socket bankSocket = null;
     Socket centralSocket = null;
@@ -39,21 +40,18 @@ public class Agent extends Thread {
         Random rand = new Random();
         Integer user = rand.nextInt(10000);
         Scanner scanner = new Scanner(System.in);
-//        System.out.println("Please Enter Name: ");
-//
-//        String name = scanner.nextLine();
-//        if (name != null && !online.contains(Integer.parseInt(name))) {
-//            System.out.println("Welcome Agent " + name + "!");
-//            online.add(user);
-//            new Agent(name);
-//        }
-//        else{
-//            System.out.println("Entered Else");
-//        }
-        if(!online.contains(user)){
-            System.out.println("Welcome Agent #" + user + "!");
-            new Agent(Integer.toString(user));
+        System.out.println("Please Enter Name: ");
+
+        String name = scanner.nextLine();
+        if (name != null) {
+            System.out.println("Welcome Agent " + name + "!");
+            new Agent(name);
         }
+
+//        if(!online.contains(user)){
+//            System.out.println("Welcome Agent #" + user + "!");
+//            new Agent(Integer.toString(user));
+//        }
 
     }
 
@@ -68,7 +66,8 @@ public class Agent extends Thread {
 
         }
 
-        this.agentName = "Agent " + bankSocket.getLocalPort();
+        this.agentName = userName;
+
         start();
 
     }
@@ -96,37 +95,54 @@ public class Agent extends Thread {
         }
     }
 
-    private void connectToServer(){
-        System.out.println("Connecting to host " + host + " on ports " + BANK_PORT + ", " + CENTRAL_PORT);
-        try {
-            bankSocket = new Socket(host, BANK_PORT);
+    private Integer convertToInt(String str){
 
-            centralSocket = new Socket(host, CENTRAL_PORT);
-            //bankSocket.connect(centralSocket.getLocalSocketAddress());
-           // centralSocket = new Socket(host, CENTRAL_PORT);
+        String temp = "";
+        boolean safe = false;
+        for(int i = 0; i < str.length(); i++){
+            if(Character.isDigit(str.charAt(i))){
+                temp += str.charAt(i);
+                safe = true;
 
-            try {
+            }
 
-                toBankServer = new ObjectOutputStream(bankSocket.getOutputStream());
-                fromBankServer = new ObjectInputStream(bankSocket.getInputStream());
+        }
 
-                toCentralServer = new ObjectOutputStream(centralSocket.getOutputStream());
-                fromCentralServer = new ObjectInputStream(centralSocket.getInputStream());
-
-
-
-            } catch (UnknownHostException e) {
-                System.err.println("Unknown host: " + host);
-                System.exit(1);
-            } catch (IOException e) {
-                System.err.println("Unable to get streams from server in Agent");
-                System.exit(1);
+        if(safe) {
+            return Integer.parseInt(temp);
+        }
+        else{
+            System.out.println("Invalid input! Missing Bank Key");
+        }
+        return -1;
+    }
+    private boolean validStr(String str){
+        int counter = 0;
+        for(int i = 0; i < str.length(); i++){
+            if(Character.isLetter(str.charAt(i))){
+                counter++;
             }
         }
-        catch (IOException e){
-
-        }
+        return (str.length() == counter);
     }
+
+    private String formatUsername(String name){
+        return "Agent " + name;
+    }
+
+    private void printInfo(){
+        System.out.print(userInfo);
+    }
+
+    private boolean biddingInfo(String house, String key, String amount){
+        if(convertToInt(house) != -1 && convertToInt(key) != -1 && convertToInt(key) != -1){
+            return true;
+        }
+        System.out.println("Must be a number!");
+        return false;
+    }
+
+
 
 
 
@@ -171,7 +187,8 @@ public class Agent extends Thread {
 
             String ui;
 
-            boolean registered = false;
+           boolean registered = false;
+           boolean accountMade = false;
 
             while((ui = stdin.readLine()) != null) {
 
@@ -192,80 +209,122 @@ public class Agent extends Thread {
 
                     if ((ui = stdin.readLine()) != null) {
                         Message request = new Message();
-                        request.newAccount = true;
-                        this.agentName = ui;
-                        request.username = ui;
-                        sendMsgToBank(request);
+                        if(validStr(ui) && ui.equals(agentName)) {
+                            request.newAccount = true;
+                            //agentName = formatUsername(ui);
+                            request.username = agentName;
+                            accountMade = true;
+                            userInfo = "Name: " + agentName + '\n';
+                            printInfo();
+                            sendMsgToBank(request);
+                        }
+                        else{
+                            System.out.println("Invalid Input");
+                        }
                     }
 
-                } else if (ui.equalsIgnoreCase("Register")) {
+                } else if (ui.equalsIgnoreCase("Register") && accountMade) {
+                    boolean cleared1, cleared;
+                    cleared = cleared1 = false;
 
-                    System.out.println("Please Provide Name and Bank Key: ");
+                    System.out.println("Please enter Username: ");
+                    Message request = new Message();
+                    if((ui = stdin.readLine()) != null){
+                        if(validStr(ui) && ui.equals(agentName)) {
+
+                            request.username = agentName;
+                            cleared1 = true;
+                        }
+                            else{
+                            System.out.println("Conflicts in names");
+                        }
+
+                    }
+                    System.out.println("Please Enter your Bank Key: ");
 
                     if ((ui = stdin.readLine()) != null) {
-                        Message request = new Message();
-                        request.register = true;
-                        request.username = ui;
-                        registered = true;
-                        sendMsgToCentral(request);
+                        if(convertToInt(ui) != -1) {
+                            request.register = true;
+                            request.bankKey = convertToInt(ui);
+                            userInfo += " Bank Key: " + convertToInt(ui) + "\n";
+                            cleared = true;
+                        }
 
+                        registered = cleared && cleared1;
+                        if(cleared && cleared1){
+                            printInfo();
+                            registered = true;
+                            sendMsgToCentral(request);
+                        }
                     }
 
                 } else if (ui.equalsIgnoreCase("View Houses") && registered) {
 
                     Message request = new Message();
-                    request.message = "View";
                     request.username = agentName;
                     request.askForList = true;
                     sendMsgToCentral(request);
 
-                } else if (ui.equalsIgnoreCase("Select House") ){//&& registered) {
+                } else if (ui.equalsIgnoreCase("Select House") && registered) {
                     System.out.println("Please Enter House Number: ");
                     Message request = new Message();
                     if ((ui = stdin.readLine()) != null) {
-
-                        request.selectedHouse = ui.trim();
-                        request.selectHouse = true;
-                        request.username = agentName;
-                        request.getItems = true;
-                        sendMsgToCentral(request);
+                        if(convertToInt(ui) != -1 ) {
+                            request.selectedHouse = ui.trim();
+                            request.selectHouse = true;
+                            request.username = agentName;
+                            request.getItems = true;
+                            sendMsgToCentral(request);
+                        }
+                        System.out.println("Must be a number!");
                     }
                 }
 
                 else if (ui.equalsIgnoreCase("Place Bid")) {
                     Message bid = new Message();
+                    boolean house = false;
+                    boolean key = false;
+                    boolean amount = false;
+                    boolean item = false;
+
                     System.out.println("Please Choose House: ");
                     if ((ui = stdin.readLine()) != null) {
-                        bid.selectedHouse = ui.trim();
-                        bid.selectHouse = true;
-                        bid.placeBid = true;
-                        bid.username = agentName;
+
+                        if(convertToInt(ui) != -1) {
+                            bid.selectedHouse = ui.trim();
+                            bid.selectHouse = true;
+                            bid.placeBid = true;
+                            bid.username = agentName;
+                            System.out.println("House = " + ui.trim());
+                            house = true;
+                        }
+
                         System.out.println("Please enter bidding key");
-                        if((ui = stdin.readLine()) != null){
+                        if((ui = stdin.readLine()) != null && convertToInt(ui) != -1){
+                            key = true;
                             bid.biddingKey = Integer.parseInt(ui);
                             System.out.println("Bidding key = " +bid.biddingKey);
+                            userInfo += " Bidding Key: " + Integer.parseInt(ui) + '\n';
                         }
 
                         System.out.println("Please Enter Item Number: ");
-                        if((ui = stdin.readLine()) != null) {
+                        if((ui = stdin.readLine()) != null && convertToInt(ui) != -1) {
                             bid.index = Integer.parseInt(ui) - 1;
+                            item = true;
                         }
                         System.out.println("Please Enter Your Bid Amount: ");
-                        if((ui = stdin.readLine()) != null) {
+                        if((ui = stdin.readLine()) != null && convertToInt(ui) != -1) {
                             bid.bidAmount = Integer.parseInt(ui);
+                            amount = true;
+
                         }
-                        sendMsgToCentral(bid);
+
+                        if(house && key && amount && item) sendMsgToCentral(bid);
 
                     }
 
                 }
-                else if(ui.contains("test")){
-                    Message test = new Message();
-                    test.test = true;
-                    test.selectHouse = true;
-                    test.selectedHouse = "1";
-                    sendMsgToCentral(test);
-                }
+
 
                 else {
                     System.out.println("Please try again...");
