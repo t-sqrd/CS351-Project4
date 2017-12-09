@@ -209,22 +209,16 @@ public class Agent extends Thread
                         request = new Message();
                         if ((ui = stdin.readLine()) != null)
                         {
-                            if(validNum(ui)){
-                                Integer bid = Integer.parseInt(ui);
-                                request.message = item;
-                                request.destination = housePicked;
-                                request.agentName = agentThread;
-                                request.bid = bid;
-                                request.username = userName;
-                                request.placeBid = true;
-                                request.username = accountName;
-                                request.bankKey = accountNumber;
-                                sendMsgToCentral(request);
-                            } else {
-                                System.out.println("Must be a valid integer to bid.");
-                                printOptions();
-                            }
-
+                            Integer bid = Integer.parseInt(ui);
+                            request.message = item;
+                            request.destination = housePicked;
+                            request.agentName = agentThread;
+                            request.bid = bid;
+                            request.username = userName;
+                            request.placeBid = true;
+                            request.username = accountName;
+                            request.bankKey = accountNumber;
+                            sendMsgToCentral(request);
                         }
                     } else
                     {
@@ -245,6 +239,7 @@ public class Agent extends Thread
                             request.selectHouse = true;
                             request.agentName = agentThread;
                             sendMsgToCentral(request);
+
                         }
                     } else
                     {

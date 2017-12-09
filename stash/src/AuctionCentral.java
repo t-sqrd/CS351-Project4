@@ -133,8 +133,16 @@ public class AuctionCentral extends Thread
 
                     if (request.placeBid)
                     {
+                        // Try: can we just pass it request instead of this...
+                        //Message m = new Message();
+                        //m.message = request.message;
+                        //m.bid = request.bid;
+                        //m.username = request.username;
+                        //m.placeBid = true;
+                        //m.bankKey = request.bankKey;
+                        //m.agentName = request.agentName;
                         bankBroadcast(request);
-                        houseSend(request.destination, request);
+                        houseSend(request.username, request.destination, request); // the house agent wants to send to
                     }
 
                     if (request.isMember)
@@ -154,12 +162,7 @@ public class AuctionCentral extends Thread
                             Message m = new Message();
                             m.getItems = true;
                             m.agentName = request.agentName;
-                            Boolean found = houseSend(request.message, m);
-                            if(!found){
-                                String s = "Sorry there is not an auction house by the name " + request.message;
-                                s += "\n Options : View Bidding Houses (v) / Select House (s) / Place Bid (p)";
-                                agentBroadcast(s);
-                            }
+                            houseSend(request.username, request.message, m);
                         }
                     } else if (selectHouse && !housesAvailable)
                     {
@@ -211,21 +214,19 @@ public class AuctionCentral extends Thread
     }
 
 
-    private Boolean houseSend(String house, Message m)
+    private void houseSend(String agent, String house, Message m)
     {
-        Boolean found = false;
         for (AuctionCentral t : threads)
         {
             if (t.myName != null)
             {
                 if (t.myName.equals(house))
                 {
-                    found = true;
+                    //m.agentName = agent;
                     t.houseBroadcast(m);
                 }
             }
         }
-        return found;
     }
 
     private void newHouseListener(boolean newHouse)

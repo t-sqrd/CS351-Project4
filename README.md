@@ -2,7 +2,7 @@
 
 Alex Schmidt, Tyson Craner, Andrew Morin, Beau Kujath.
 
-The auction simulator we made is mostly working, with a few minor bugs. You create just one Bank, and one Central Server. You can make as many Agent/House Clients as you want. Follow the prompts in the Agent Applications only, as the House Clients require no I/O. 
+The auction simulator we made is mostly working, with a few minor bugs. You create just one Bank, and one Central Server. You can make as many Agent/House Clients as you want. Follow the prompts in the Agent Applications only, as the House Clients require no I/O. It uses integers for all bids and has a 30 second timer before you can win an item.
 
 ### Future Additions/Issues:
 
