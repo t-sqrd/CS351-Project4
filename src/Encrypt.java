@@ -1,9 +1,11 @@
-import java.util.Random;
 import java.math.BigInteger;
+import java.util.Random;
+
 /**
  * Created by alexschmidt-gonzales on 11/25/17.
  */
-public class Encrypt {
+public class Encrypt
+{
 
     private BigInteger PRIME_P;
     private BigInteger PRIME_Q;
@@ -12,91 +14,102 @@ public class Encrypt {
     private BigInteger PRIVATE_KEY;
     private BigInteger PUBLIC_KEY;
     private BigInteger ENCRYTED;
-    //private BigInteger PUBLIC_KEY = new BigInteger("65537");
 
     private String message;
     private String temp = "";
 
-    public Encrypt(){
+    // Class not currently used, but can
+    // be implemented to encrypt agent keys
+
+    public Encrypt()
+    {
         init_P_Q();
         makeKey();
 
     }
 
 
-    public Encrypt(String message){
+    public Encrypt(String message)
+    {
         this.message = message;
         init_P_Q();
         makeKey();
     }
 
-    public BigInteger getENCRYTED(String message){
+    public BigInteger getENCRYTED(String message)
+    {
         this.message = message;
         return encryptMessage();
 
     }
 
 
-    public BigInteger getPublic(){
+    public BigInteger getPublic()
+    {
         return PUBLIC_KEY;
     }
 
-    public BigInteger getPrivate(){
+    public BigInteger getPrivate()
+    {
         return PRIVATE_KEY;
     }
 
-    private void init_P_Q(){
+    private void init_P_Q()
+    {
         this.PRIME_P = makePrimes();
         this.PRIME_Q = makePrimes();
-        if(PRIME_P.equals(PRIME_Q)){
+        if (PRIME_P.equals(PRIME_Q))
+        {
             init_P_Q();
         }
 
     }
-    private void reformatMessage(){
 
-        for(int i = 0; i < message.length(); i++){
+    private void reformatMessage()
+    {
+
+        for (int i = 0; i < message.length(); i++)
+        {
             //temp += Integer.toString(message.codePointAt(i));
             temp += Integer.toString(message.codePointAt(i));
         }
     }
 
-    private void makeKey(){
+    private void makeKey()
+    {
 
         this.PRODUCT_N = PRIME_P.multiply(PRIME_Q);
         this.PHI = (PRIME_P.subtract(BigInteger.ONE)).multiply(PRIME_Q.subtract(BigInteger.ONE));
-        //PUBLIC_KEY = coPrime(PHI);
         this.PUBLIC_KEY = betaCoPrime(PHI);
-        //PUBLIC_KEY = new BigInteger("65537");
         this.PRIVATE_KEY = PUBLIC_KEY.modInverse(PHI);
 
-//        BigInteger testEncrypt = new BigInteger(message);
-//        System.out.println("original num = " + testEncrypt);
-//        BigInteger temp = encryptNum(testEncrypt);
-//
-//         BigInteger end = decryptNum(temp);
 
     }
 
-    private void printValues(){
+    private void printValues()
+    {
         System.out.println("P = " + PRIME_P);
-        System.out.println("Q = "+ PRIME_Q);
+        System.out.println("Q = " + PRIME_Q);
         System.out.println("Product N = " + PRODUCT_N);
         System.out.println("PHI = " + PHI);
         System.out.println("Private Key = " + PRIVATE_KEY);
         System.out.println("Public Key = " + PUBLIC_KEY);
     }
 
-    public BigInteger encryptMessage(){
+    public BigInteger encryptMessage()
+    {
 
         BigInteger m = new BigInteger(message);
         return encryptNum(m);
     }
 
 
-    private BigInteger coPrime(BigInteger r){
-        for(long i = 2; i < r.intValueExact(); i++){
-            if(r.gcd(BigInteger.valueOf(i)).equals(BigInteger.ONE)){
+    private BigInteger coPrime(BigInteger r)
+    {
+        for (long i = 2; i < r.intValueExact(); i++)
+        {
+            if (r.gcd(BigInteger.valueOf(i)).equals(BigInteger.ONE))
+            {
                 System.out.println("I = " + i);
                 return BigInteger.valueOf(i);
             }
@@ -104,12 +117,15 @@ public class Encrypt {
         return r;
     }
 
-    private BigInteger betaCoPrime(BigInteger r){
+    private BigInteger betaCoPrime(BigInteger r)
+    {
         BigInteger i;
-        for(i = new BigInteger("2");
-            i.compareTo(r) < 2;
-            i = i.add(BigInteger.ONE)) {
-            if(r.gcd(i).equals(BigInteger.ONE)){
+        for (i = new BigInteger("2");
+             i.compareTo(r) < 2;
+             i = i.add(BigInteger.ONE))
+        {
+            if (r.gcd(i).equals(BigInteger.ONE))
+            {
                 return i;
             }
         }
@@ -117,35 +133,36 @@ public class Encrypt {
 
     }
 
-    private BigInteger makePrimes(){
+    private BigInteger makePrimes()
+    {
         Random rand = new Random();
         return BigInteger.probablePrime(16, rand);
     }
 
-    private BigInteger encryptNum(BigInteger number){
+    private BigInteger encryptNum(BigInteger number)
+    {
 
         BigInteger encrypted = number.modPow(PUBLIC_KEY, PRODUCT_N);
         ENCRYTED = encrypted;
-        System.out.println("Encrypted = "+ encrypted);
+        System.out.println("Encrypted = " + encrypted);
 
         return encrypted;
     }
 
-    private BigInteger decryptNum(BigInteger encrypted){
+    private BigInteger decryptNum(BigInteger encrypted)
+    {
 
         BigInteger decrypted = encrypted.modPow(PRIVATE_KEY, PRODUCT_N);
         System.out.println("Decrypted = " + decrypted);
         return decrypted;
     }
 
-    public BigInteger getEncrpytedNum(){
+    public BigInteger getEncrpytedNum()
+    {
         return ENCRYTED;
     }
 
-    public static void main(String[] args){
-//        Encrypt e = new Encrypt("123456778");
-//        e.encryptMessage();
-//        e.getPublic();
-//        e.printValues();
+    public static void main(String[] args)
+    {
     }
 }

@@ -1,7 +1,3 @@
-import java.awt.*;
-import java.util.Timer;
-import java.util.TimerTask;
-
 public class Item extends Thread {
     private String name;
     private double price;

@@ -2,10 +2,9 @@
 import java.util.ArrayList;
 import java.util.Random;
 
-public class Account{
+public class Account
+{
 
-    public boolean isRegistered = false;
-    public Integer hasHold;
     public String clientName;
     private static ArrayList<Integer> usedAccountNumbers = new ArrayList<>();
     private static ArrayList<Integer> usedBankKeys = new ArrayList<>();
@@ -17,28 +16,32 @@ public class Account{
     private Integer tempBalance;
     private Integer balance;
 
-
-
-
-    public Account(String clientName){
+    // Init account with client's name
+    public Account(String clientName)
+    {
         this.clientName = clientName;
         this.initAccount();
-        System.out.println("Account ["+clientName+"] has been created...");
+        System.out.println("Account [" + clientName + "] has been created...");
 
     }
-    public String getAccountInfo(){
+
+    // format users info
+    public String getAccountInfo()
+    {
 
         return "Name: " + clientName + ", Account Number: " + accountNumber +
-                 ", Bank Key: " + bankKey + ", Initial Deposit: $" + initialDeposit+".00";
+                ", Bank Key: " + bankKey + ", Initial Deposit: $" + initialDeposit + ".00";
     }
 
-    public Integer getKey(){
+    public Integer getKey()
+    {
         return bankKey;
     }
 
 
-
-    public Message placeHoldOnAccount(Message request){
+    // Attempt to place a hold on a bidders account
+    public Message placeHoldOnAccount(Message request)
+    {
 
         Integer amount = request.bidAmount;
         boolean isOver = request.isOver;
@@ -46,33 +49,34 @@ public class Account{
 
         Message response = new Message();
         response.username = clientName;
-        if(isOver){
+        if (isOver)
+        {
             response.hasFunds = true;
-            if(WON) {
+            if (WON)
+            {
                 response.funds = balance - tempBalance;
                 balance -= tempBalance;
                 response.message = "You have won the item! Balance: " + balance;
-            }
-            else{
+            } else
+            {
                 balance += amount;
 
-                response.message = "Auction for this item is over! You were outbidded! Balance: "+ balance;
+                response.message = "Auction for this item is over! You were outbidded! Balance: " + balance;
 
             }
             return response;
-        }
-        else{
-            if((tempBalance - amount) <= 0){
+        } else
+        {
+            if ((tempBalance - amount) <= 0)
+            {
                 response.message = "Insufficient funds. Hold denied";
                 System.out.println("HERE");
                 return response;
-            }
-
-            else {
+            } else
+            {
 
                 balance -= amount;
                 response.message = "Hold placed on account. New Amount: " + balance;
-                // System.out.println(response.message);
                 return response;
 
             }
@@ -80,13 +84,12 @@ public class Account{
     }
 
 
-
-
-
-    private Integer makeBankKey() {
+    private Integer makeBankKey()
+    {
         Random rand = new Random();
         Integer key = rand.nextInt(50);
-        if(usedBankKeys.contains(key)){
+        if (usedBankKeys.contains(key))
+        {
             makeBankKey();
         }
 
@@ -94,17 +97,20 @@ public class Account{
     }
 
 
-    private Integer makeAccountNumber(){
+    private Integer makeAccountNumber()
+    {
         Random rand = new Random();
         Integer accountNum = rand.nextInt(10000);
-        if(usedAccountNumbers.contains(accountNum)){
+        if (usedAccountNumbers.contains(accountNum))
+        {
             makeAccountNumber();
         }
         return accountNum;
     }
 
 
-    private void initAccount(){
+    private void initAccount()
+    {
         this.accountNumber = makeAccountNumber();
         this.bankKey = makeBankKey();
         this.initialDeposit = 30000;
@@ -112,10 +118,6 @@ public class Account{
         tempBalance = balance;
 
     }
-
-
-
-
 
 
 }

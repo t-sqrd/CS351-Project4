@@ -1,16 +1,17 @@
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Random;
 
 /**
  * Created by alexschmidt-gonzales on 11/19/17.
  */
-public class Bank extends Thread {
+public class Bank extends Thread
+{
 
 
     private static HashMap<Integer, Account> bankMap = new HashMap<>();
@@ -21,82 +22,83 @@ public class Bank extends Thread {
     private static final int PORT_NUMBER = 8080;
     private String clientName;
 
-    public Message forCentral;
-
     private volatile boolean KILL;
     private ObjectInputStream fromClient;
     private ObjectOutputStream toClient;
-    private Account account;
 
 
-    private final String host = "127.0.0.1";
-
-    public Bank(Socket socket) {
+    // Create Bank object from socket
+    public Bank(Socket socket)
+    {
         this.bankSocket = socket;
 
-
-        try {
-
+        try
+        {
 
             toClient = new ObjectOutputStream(bankSocket.getOutputStream());
             fromClient = new ObjectInputStream(bankSocket.getInputStream());
 
-
-
-        } catch (IOException e) {
+        } catch (IOException e)
+        {
 
         }
 
     }
 
-    public void run() {
+    // start bank server and listen
+    // for messages
+    public void run()
+    {
 
-        try {
-
+        try
+        {
 
             Message request;
 
-            while (!KILL) {
+            while (!KILL)
+            {
 
-                try {
+                try
+                {
 
-                    while ((request = (Message) fromClient.readObject()) != null) {
+                    while ((request = (Message) fromClient.readObject()) != null)
+                    {
 
-                        System.out.println("TESTING FIRST");
+                        // Form response based on message request
 
-                        if (request.newAccount) {
+                        if (request.newAccount)
+                        {
                             makeAccount(request);
                             printAllClients();
-
                         }
 
-                        if (request.verify) {
+                        if (request.verify)
+                        {
                             Message response = new Message();
                             System.out.println("Entered If statement");
                             clientName = "CENTRAL";
 
                             Integer key = request.bankKey;
-                           // boolean isRegistered = bankMap.get(key).isRegistered;
+                            if (bankMap.containsKey(key))
+                            {
 
-                            if(bankMap.containsKey(key)){
-
-                                if(!registeredKeys.contains(key)) {
+                                if (!registeredKeys.contains(key))
+                                {
 
                                     response.isMember = true;
                                     response.message = "USER IS MEMBER";
                                     response.fromBank = true;
                                     sendMessage(response);
-                                }
-                                else{
+                                } else
+                                {
                                     response.message = "Account already registered";
                                     response.isMember = false;
                                     sendMessage(response);
 
                                 }
 
-                            }
-
-                            else{
+                            } else
+                            {
 
                                 response.isMember = false;
                                 response.message = "Bank Account not found";
@@ -104,24 +106,27 @@ public class Bank extends Thread {
                             }
 
 
-
-                            for(Account i : bankMap.values()){
+                            for (Account i : bankMap.values())
+                            {
                                 System.out.println("Account = " + i.clientName);
                             }
 
                         }
-                        if(request.isOver){
+                        if (request.isOver)
+                        {
                             System.out.println("TESTING");
                             placeHold(request);
                         }
 
-                        if(request.placeHold){
+                        if (request.placeHold)
+                        {
                             System.out.println("ENTER PLACE HOLD");
                             placeHold(request);
 
                         }
 
-                        if (request.KILL) {
+                        if (request.KILL)
+                        {
                             Message response = new Message();
                             response.message = "Goodbye...";
                             sendMessage(response);
@@ -132,42 +137,48 @@ public class Bank extends Thread {
                         printAllClients();
 
                     }
-                } catch (ClassNotFoundException ex) {
+                } catch (ClassNotFoundException ex)
+                {
 
-                } catch (IOException ex) {
-
-                    //System.out.println("Unable to get streams from client in bank server");
+                } catch (IOException ex)
+                {
+                    System.out.println("Unable to get streams from client in bank server " + ex.getMessage());
 
                 }
             }
-        }
+        } finally
+        {
+            try
+            {
+                System.out.println(clientName + " is exiting bank...");
+                threads.remove(this);
+                toClient.close();
+                fromClient.close();
+                bankSocket.close();
 
-            finally{
-                try {
-                    System.out.println(clientName + " is exiting bank...");
-                    threads.remove(this);
-                    toClient.close();
-                    fromClient.close();
-                    bankSocket.close();
-
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+            } catch (IOException ex)
+            {
+                ex.printStackTrace();
             }
         }
-    private void placeHold(Message request){
+    }
+
+    private void placeHold(Message request)
+    {
 
         Integer bankKey = request.bankKey;
         Integer amount = request.bidAmount;
-        System.out.println("bankkey->" +bankKey);
+        System.out.println("bankkey->" + bankKey);
         System.out.println("Amount->" + amount);
         System.out.println(request.username);
 
-        if(bankMap.containsKey(bankKey)) {
+        if (bankMap.containsKey(bankKey))
+        {
             System.out.println("ENTERED");
             Account account = bankMap.get(bankKey);
 
-            if(account != null) {
+            if (account != null)
+            {
                 Message response = account.placeHoldOnAccount(request);
                 System.out.println("A " + response.username + " " + response.message);
                 response.username = request.username;
@@ -180,7 +191,8 @@ public class Bank extends Thread {
     }
 
 
-    private void makeAccount(Message request){
+    private void makeAccount(Message request)
+    {
 
         Message response = new Message();
         clientName = request.username;
@@ -191,38 +203,45 @@ public class Bank extends Thread {
         sendMessage(response);
     }
 
-    private void sendMessage(Message msg) {
-        try {
+    private void sendMessage(Message msg)
+    {
+        try
+        {
 
             System.out.println(msg.username + " " + msg.message);
 
             toClient.writeObject(msg);
             toClient.flush();
 
-        } catch (IOException e) {
+        } catch (IOException e)
+        {
 
         }
     }
 
 
-    private void printAllClients(){
-        for(Bank t : threads){
+    private void printAllClients()
+    {
+        for (Bank t : threads)
+        {
             System.out.println("Users Connected to bank-> " + t.clientName);
 
         }
     }
 
 
-
-
-    public static void main(String[] args) {
+    // Start the bank
+    public static void main(String[] args)
+    {
         System.out.println("Banking Server connected...");
         System.out.println("On port " + PORT_NUMBER);
         ServerSocket server = null;
-        try {
+        try
+        {
             server = new ServerSocket(PORT_NUMBER);
 
-            while (!server.isClosed()) {
+            while (!server.isClosed())
+            {
 
 
                 Bank b = new Bank(server.accept());
@@ -231,14 +250,18 @@ public class Bank extends Thread {
 
             }
 
-        } catch (IOException ex) {
+        } catch (IOException ex)
+        {
             ex.printStackTrace();
             System.out.println("Unable to start Banking server.");
-        } finally {
-            try {
+        } finally
+        {
+            try
+            {
                 if (server != null)
                     server.close();
-            } catch (IOException ex) {
+            } catch (IOException ex)
+            {
                 ex.printStackTrace();
             }
         }
