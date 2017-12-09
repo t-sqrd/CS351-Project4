@@ -17,12 +17,12 @@ public class Message implements Serializable {
     boolean HOUSE_LEAVING;
 
     boolean askForList, getItems, houseList, isItems;
-    boolean fromHouse, register, moveFunds;
-    boolean selectHouse;
+    boolean fromHouse, register, isOver, hasFunds;
+    boolean selectHouse, updateAccount, WON;
     boolean placeBid, verify, isMember, fromBank;
-    boolean newHouse, newUser, invalidBid, test;
+    boolean newHouse, placeHold, invalidBid, test, toUser;
     int test2, test3;
-    Integer biddingKey, bankKey, index, bidAmount;
+    Integer biddingKey, bankKey, index, bidAmount, funds;
     String message, selectedHouse;
     String[] items;
     String[] houses;
@@ -32,7 +32,9 @@ public class Message implements Serializable {
     int counterS = 0;
 
 
-    public Message(){}
+    public Message(){
+
+    }
 
     public void makeDoubleArray(double price){
         prices[counterD] = price;

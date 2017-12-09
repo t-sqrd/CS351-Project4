@@ -111,27 +111,31 @@ public class AuctionHouses extends Thread {
                             response.makeDoubleArray(myPrices[i]);
                         }
                         System.out.println(response.prices[0]);
+
                         sendMessage(response);
                     }
                     if (request.placeBid) {
                         response = new Message();
                         response.username = request.username;
-                        response.fromHouse = true;
+                        request.fromHouse = true;
                         response.placeBid = true;
-                        if (myPrices[request.index] < request.bidAmount) {
-                            myPrices[request.index] = request.bidAmount;
-                        } else {
-                            response.invalidBid = true;
-                        }
-                        response.items = new String[3];
-                        for (int i = 0; i < 3; i++) {
-                            response.makeStringArray(myItems[i]);
-                        }
-                        response.prices = new double[3];
-                        for (int i = 0; i < 3; i++) {
-                            response.makeDoubleArray(myPrices[i]);
-                        }
-                        sendMessage(response);
+                        response.biddingKey = request.biddingKey;
+                        response.bidAmount = request.bidAmount;
+
+//                        if (myPrices[request.index] < request.bidAmount) {
+//                            myPrices[request.index] = request.bidAmount;
+//                        } else {
+//                            response.invalidBid = true;
+//                        }
+//                        response.items = new String[3];
+//                        for (int i = 0; i < 3; i++) {
+//                            response.makeStringArray(myItems[i]);
+//                        }
+//                        response.prices = new double[3];
+//                        for (int i = 0; i < 3; i++) {
+//                            response.makeDoubleArray(myPrices[i]);
+//                        }
+                        sendMessage(request);
                     }
 
                 }

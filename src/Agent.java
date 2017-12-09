@@ -15,6 +15,8 @@ public class Agent extends Thread {
     public static final String host = "127.0.0.1";
     public volatile boolean bidding = false;
     private volatile boolean isRunning = true;
+    private static Integer myBankKey;
+    private static Integer myBiddingKey;
     private static String options = "*** Options : Make Account / View Houses / Register / Select House / Place Bid ***";
     public int myKey;
     private ArrayList<ListenFromServer> servers = new ArrayList<>();
@@ -183,9 +185,11 @@ public class Agent extends Thread {
                     isRunning = false;
                     break;
 
-                } else if (ui.equalsIgnoreCase("Make Account")) {
+                }
+                else if (ui.equalsIgnoreCase("Make Account")) {
 
                     System.out.println("Please Enter Name: ");
+
                     if ((ui = stdin.readLine()) != null) {
                         Message request = new Message();
                         request.newAccount = true;
@@ -197,6 +201,7 @@ public class Agent extends Thread {
                 } else if (ui.equalsIgnoreCase("Register")) {
 
                     System.out.println("Please Provide Name and Bank Key: ");
+
                     if ((ui = stdin.readLine()) != null) {
                         Message request = new Message();
                         request.register = true;
@@ -206,7 +211,7 @@ public class Agent extends Thread {
 
                     }
 
-                } else if (ui.contains("vi") && registered) {
+                } else if (ui.equalsIgnoreCase("View Houses") && registered) {
 
                     Message request = new Message();
                     request.message = "View";
@@ -214,39 +219,52 @@ public class Agent extends Thread {
                     request.askForList = true;
                     sendMsgToCentral(request);
 
-                } else if (ui.contains("se") ){//&& registered) {
+                } else if (ui.equalsIgnoreCase("Select House") ){//&& registered) {
                     System.out.println("Please Enter House Number: ");
                     Message request = new Message();
                     if ((ui = stdin.readLine()) != null) {
 
-                        request.selectedHouse = ui.trim();
+                        request.selectedHouse = ui;
                         request.selectHouse = true;
                         request.username = agentName;
                         request.getItems = true;
-
-
                         sendMsgToCentral(request);
                     }
-                } else if (ui.contains("bi")) {
+                }
+
+                else if (ui.equalsIgnoreCase("Place Bid")) {
                     Message bid = new Message();
                     System.out.println("Please Choose House: ");
                     if ((ui = stdin.readLine()) != null) {
-                        bid.selectedHouse = ui;
+                        bid.selectedHouse = ui.trim();
                         bid.selectHouse = true;
                         bid.placeBid = true;
                         bid.username = agentName;
+                        System.out.println("Please enter bidding key");
+                        if((ui = stdin.readLine()) != null){
+                            bid.biddingKey = Integer.parseInt(ui);
+                            System.out.println("Bidding key = " +bid.biddingKey);
+                        }
+
                         System.out.println("Please Enter Item Number: ");
                         if((ui = stdin.readLine()) != null) {
                             bid.index = Integer.parseInt(ui) - 1;
+                            System.out.println("Index = " +bid.index);
                         }
                         System.out.println("Please Enter Your Bid Amount: ");
                         if((ui = stdin.readLine()) != null) {
                             bid.bidAmount = Integer.parseInt(ui);
+                            System.out.println("Bidding Amount = " +bid.bidAmount);
+
                         }
+                        System.out.println("END");
                         sendMsgToCentral(bid);
 
+
                     }
-                } else if(ui.contains("test")){
+
+                }
+                else if(ui.contains("test")){
                     Message test = new Message();
                     test.test = true;
                     test.selectHouse = true;
@@ -322,9 +340,9 @@ public class Agent extends Thread {
                         if(server.isItems){
                             System.out.println("Is Items: " + server.items[0]);
                             printItems(server.items, server.prices);
-                        } else if(server.houseList) {
+                        }else if(server.houseList) {
                             printHouses(server.houses);
-                        } else if(server.placeBid){
+                        }else if(server.placeBid){
                             if(server.invalidBid) System.out.println("Your bid must be higher than the existing bid!");
                             else System.out.println("Your bid was successful!");
                             printItems(server.items, server.prices);
