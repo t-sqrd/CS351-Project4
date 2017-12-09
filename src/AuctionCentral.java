@@ -36,14 +36,14 @@ public class AuctionCentral extends Thread {
     private final String host = "127.0.0.1";
 
 
-
-
-
     public static ArrayList<AuctionCentral> threads = new ArrayList<>();
-    public static HashMap<Integer, String> registeredUsers = new HashMap<>();
+
+    //BiddingKey, BankKey
+    public static HashMap<Integer, Integer> keys = new HashMap<>();
+    public static HashMap<HashMap<Integer, Integer>, String> registeredUsers = new HashMap<>();
+
     public Bank b;
     public Socket bankSocket;
-
 
 
     public AuctionCentral(Socket socket) {
@@ -51,13 +51,13 @@ public class AuctionCentral extends Thread {
 
         try {
 
+            bankSocket = new Socket(host, 8080);
+
             toClient = new ObjectOutputStream(socket.getOutputStream());
             fromClient = new ObjectInputStream(socket.getInputStream());
 
-            bankSocket = new Socket(host, 8080);
             toBank = new ObjectOutputStream(bankSocket.getOutputStream());
             fromBank = new ObjectInputStream(bankSocket.getInputStream());
-
 
 
             Message user = (Message) fromClient.readObject();
@@ -91,6 +91,22 @@ public class AuctionCentral extends Thread {
                     //getting list of items from house then sending them to the requesting agent
                     if (request.fromHouse) {
                         houseResponse(request);
+
+
+                        if(request.houseList) houseResponse(request);
+
+                        if (request.placeBid) {
+
+                            Message msg = new Message();
+                            msg.username = request.username;
+                            msg.placeHold = true;
+                            msg.bankKey = keys.get(request.biddingKey);
+                            msg.bidAmount = request.bidAmount;
+                            bankBroadcast(msg);
+                            houseResponse(readFromBank());
+                        }
+
+
                     }
 
                     if(request.notification){
@@ -113,16 +129,17 @@ public class AuctionCentral extends Thread {
 
 
                         if (bankMsg.isMember) {
-                            Integer key = makeBiddingKey();
-                            registeredUsers.put(key, myName);
+                            Integer biddingKey = makeBiddingKey();
+                            keys.put(biddingKey, clientBankKey);
+                            registeredUsers.put(keys, myName);
                             response = new Message();
-                            response.biddingKey = key;
-                            response.message = "Your account has been activated, Bidding key -> " + key;
+                            response.biddingKey = biddingKey;
+                            response.message = "Your account has been activated, Bidding key -> " + biddingKey;
                             clientBroadcast(response);
 
                         } else {
 
-                            //bankMsg.message = "Bank account not found or account is already registered...";
+                            bankMsg.message = "Bank account not found or account is already registered...";
                             clientBroadcast(bankMsg);
                         }
 
@@ -147,12 +164,16 @@ public class AuctionCentral extends Thread {
                             Message m = new Message();
                             m.message = "There are no houses available...";
                             clientBroadcast(m);
+                        }
+
                     }
+                    if(request.fromBank && request.toUser){
+                        System.out.println("ENTERED new if");
+                        houseResponse(request);
+                    }
+
                 }
             }
-
-
-        }
 
         catch (IOException e) {
 
@@ -165,7 +186,7 @@ public class AuctionCentral extends Thread {
 
                 System.out.println(myName + " is logging off...");
                 threads.remove(this);
-                if(this.amHouse) houseId--;
+                if (this.amHouse) houseId--;
                 houseLeavingListener(this);
                 fromBank.close();
                 toBank.close();
@@ -188,9 +209,11 @@ public class AuctionCentral extends Thread {
     private void convertToInteger(String str) {
         String key = "";
         String name = "";
+        boolean safe = false;
         for (int i = 0; i < str.length(); i++) {
             if (Character.isDigit(str.charAt(i))) {
                 key += str.charAt(i);
+                safe = true;
             } else {
                 name += str.charAt(i);
             }
@@ -199,27 +222,26 @@ public class AuctionCentral extends Thread {
         clientBankKey = Integer.parseInt(key);
     }
 
-    private void houseResponse(Message request){
+    private void houseResponse(Message request) {
         for (AuctionCentral t : threads) {
             System.out.println(t.myName + " " + request.username);
             if (t.myName.equals(request.username)) {
                 t.clientBroadcast(request);
             }
         }
-
     }
 
-    private void communicationBeta(Message msg, String house){
+    private void communicationBeta(Message msg, String house) {
         int houseNumber = Integer.parseInt(house);
         int counter = 1;
-       for(AuctionCentral t : threads){
-           if(t.amHouse && counter == houseNumber){
-               t.clientBroadcast(msg);
-               break;
-           } else if(t.amHouse){
-               counter++;
-           }
-       }
+        for (AuctionCentral t : threads) {
+            if (t.amHouse && counter == houseNumber) {
+                t.clientBroadcast(msg);
+                break;
+            } else if (t.amHouse) {
+                counter++;
+            }
+        }
 
     }
 
@@ -270,11 +292,7 @@ public class AuctionCentral extends Thread {
         try {
 
             m = (Message) fromBank.readObject();
-            boolean member = m.isMember;
 
-            System.out.println(member);
-
-            System.out.println(m.message);
             return m;
         } catch (IOException e) {
 

@@ -25,6 +25,7 @@ public class Bank extends Thread {
     private volatile boolean KILL;
     private ObjectInputStream fromClient;
     private ObjectOutputStream toClient;
+    private Account account;
 
 
     private final String host = "127.0.0.1";
@@ -102,7 +103,11 @@ public class Bank extends Thread {
 
                         }
 
-                        if(request.moveFunds){
+                        if(request.placeHold){
+                            System.out.println("ENTER PLACE HOLD");
+
+
+                            placeHold(request);
 
                         }
 
@@ -140,6 +145,24 @@ public class Bank extends Thread {
                 }
             }
         }
+    private void placeHold(Message request){
+
+        Integer bankKey = request.bankKey;
+        Integer amount = request.bidAmount;
+        System.out.println("bankkey->" +bankKey);
+        System.out.println("Amount->" + amount);
+
+        if(bankMap.containsKey(bankKey)) {
+            System.out.println("ENTERED");
+            Account account = bankMap.get(bankKey);
+            Message response = account.placeHoldOnAccount(request);
+            response.username = request.username;
+            response.fromBank = true;
+            response.toUser = true;
+            sendMessage(response);
+
+        }
+    }
 
 
     private void makeAccount(Message request){

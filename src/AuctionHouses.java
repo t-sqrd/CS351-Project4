@@ -20,15 +20,12 @@ public class AuctionHouses extends Thread {
     private ObjectInputStream fromCentralServer;
     private Socket centralSocket;
     private String houseName;
-    private boolean listener;
-    private AuctionHouses parent;
     private BufferedReader reader;
     private static String[] myItems = new String[3];
     private static double[] myPrices = new double[3];
     private ArrayList<Item> itemsMain = new ArrayList<>();
 
     public static void main(String[] args) {
-
         new AuctionHouses();
     }
 
@@ -53,7 +50,6 @@ public class AuctionHouses extends Thread {
                 myItems[i] = items[z];
                 myPrices[i] = prices[z];
             }
-
         } catch (IOException e) {
             System.out.println("File not found.");
         }
@@ -99,7 +95,8 @@ public class AuctionHouses extends Thread {
             sendMessage(myName);
             while (centralSocket.isConnected()) {
                 Message request, response;
-                while ((request = (Message) fromCentralServer.readObject()) != null && checkTimers()) {
+                while ((request = (Message) fromCentralServer.readObject()) != null) {
+//
                     if (request.getItems) {
                         response = new Message();
                         response.username = request.username;
@@ -125,8 +122,9 @@ public class AuctionHouses extends Thread {
                     if (request.placeBid) {
                         response = new Message();
                         response.username = request.username;
-                        response.fromHouse = true;
+                        request.fromHouse = true;
                         response.placeBid = true;
+                        response.biddingKey = request.biddingKey;
                         if (!itemsMain.get(request.index).placeBid(request.bidAmount, request.username)) {
                             response.invalidBid = true;
                         }
@@ -156,7 +154,6 @@ public class AuctionHouses extends Thread {
 //                    }
 
                 }
-
             }
             Message kill = new Message();
             kill.KILL = true;
