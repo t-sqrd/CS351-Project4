@@ -14,6 +14,7 @@ public class Bank extends Thread {
 
 
     private static HashMap<Integer, Account> bankMap = new HashMap<>();
+    private static ArrayList<Integer> registeredKeys = new ArrayList<>();
     private Socket bankSocket;
 
     private static ArrayList<Bank> threads = new ArrayList<>();
@@ -73,23 +74,28 @@ public class Bank extends Thread {
                             clientName = "CENTRAL";
 
                             Integer key = request.bankKey;
-                            boolean isRegistered = bankMap.get(key).isRegistered;
+                           // boolean isRegistered = bankMap.get(key).isRegistered;
 
-                            if(bankMap.containsKey(key) && !isRegistered){
+                            if(bankMap.containsKey(key)){
 
-                                bankMap.get(key).isRegistered = true;
-                                response.isMember = true;
-                                response.message = "USER IS MEMBER";
-                                response.fromBank = true;
-                                sendMessage(response);
+                                if(!registeredKeys.contains(key)) {
+
+                                    response.isMember = true;
+                                    response.message = "USER IS MEMBER";
+                                    response.fromBank = true;
+                                    sendMessage(response);
+                                }
+                                else{
+                                    response.message = "Account already registered";
+                                    response.isMember = false;
+                                    sendMessage(response);
+
+                                }
 
                             }
-                            else if(isRegistered){
-                                response.message = "Account already registered";
-                                response.isMember = false;
-                                sendMessage(response);
-                            }
+
                             else{
+
                                 response.isMember = false;
                                 response.message = "Bank Account not found";
                                 sendMessage(response);

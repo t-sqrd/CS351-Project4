@@ -118,7 +118,7 @@ public class AuctionCentral extends Thread {
                         response = new Message();
 
                         myName = request.username;
-                        convertToInteger(request.username);
+                        clientBankKey = request.bankKey;
 
                         System.out.println("Agent Name = " + myName);
                         response.bankKey = clientBankKey;
@@ -139,7 +139,7 @@ public class AuctionCentral extends Thread {
 
                         } else {
 
-                            bankMsg.message = "Bank account not found or account is already registered...";
+                           // bankMsg.message = "Bank account not found or account is already registered...";
                             clientBroadcast(bankMsg);
                         }
 
@@ -206,21 +206,21 @@ public class AuctionCentral extends Thread {
     }
 
 
-    private void convertToInteger(String str) {
-        String key = "";
-        String name = "";
-        boolean safe = false;
-        for (int i = 0; i < str.length(); i++) {
-            if (Character.isDigit(str.charAt(i))) {
-                key += str.charAt(i);
-                safe = true;
-            } else {
-                name += str.charAt(i);
-            }
-        }
-        myName = name.trim();
-        clientBankKey = Integer.parseInt(key);
-    }
+//    private void convertToInteger(String str) {
+//        String key = "";
+//        String name = "";
+//        boolean safe = false;
+//        for (int i = 0; i < str.length(); i++) {
+//            if (Character.isDigit(str.charAt(i))) {
+//                key += str.charAt(i);
+//                safe = true;
+//            } else {
+//                name += str.charAt(i);
+//            }
+//        }
+//        myName = name.trim();
+//        clientBankKey = Integer.parseInt(key);
+//    }
 
     private void houseResponse(Message request) {
         for (AuctionCentral t : threads) {

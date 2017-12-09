@@ -4,7 +4,7 @@ import java.util.Random;
 
 public class Account{
 
-    public boolean isRegistered;
+    public boolean isRegistered = false;
     public Integer hasHold;
     private String clientName;
     private static ArrayList<Integer> usedAccountNumbers = new ArrayList<>();
@@ -23,7 +23,6 @@ public class Account{
     public Account(String clientName){
         this.clientName = clientName;
         this.initAccount();
-        tempBalance = balance;
         System.out.println("Account ["+clientName+"] has been created...");
 
     }
