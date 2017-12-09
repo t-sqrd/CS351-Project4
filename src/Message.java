@@ -9,46 +9,32 @@ public class Message implements Serializable
     private static final long serialVersionUID = -5399605122490343339L;
 
     String username;
+    String agentName;
     boolean newAccount;
     volatile boolean KILL;
     boolean HOUSE_LEAVING;
 
-    boolean askForList, getItems, houseList, isItems;
-    boolean fromHouse, register, isOver, hasFunds;
-    boolean selectHouse, WON, notification;
-    boolean placeBid, verify, isMember, fromBank;
-    boolean newHouse, placeHold, toUser, invalidBid;
-    Integer biddingKey, bankKey, index, bidAmount, funds;
-    String message, selectedHouse;
-    String[] items;
-    String[] houses;
-    double[] prices;
-    int[] timeLeft;
-
-    int counterD = 0;
-    int counterS = 0;
-    int counterT = 0;
+    boolean askForList, getItems, houseList, newHouse;
+    boolean fromHouse, register, selectHouse, isList, isWin;
+    boolean placeBid, verify, isMember, fromBank, isLoss;
+    int bid, bankKey;
+    String destination;
+    String message;
 
 
-    // Adds a price to the prices array
-    public void makeDoubleArray(double price)
+    public Message()
     {
-        prices[counterD] = price;
-        counterD++;
     }
 
-    // adds an item to the items array
-    public void makeStringArray(String item)
+    public Message(String message)
     {
-        items[counterS] = item;
-        counterS++;
+
+        username = message;
     }
 
-    // Adds the time left to the timer array
-    public void makeTimerArray(int timer)
+    public String getMessage()
     {
-        timeLeft[counterT] = timer;
-        counterT++;
+        return message;
     }
 
 

@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 /**
  * Created by alexschmidt-gonzales on 11/19/17.
@@ -15,19 +16,24 @@ public class Bank extends Thread
 
 
     private static HashMap<Integer, Account> bankMap = new HashMap<>();
-    private static ArrayList<Integer> registeredKeys = new ArrayList<>();
     private Socket bankSocket;
+    private final int MAX_ACCOUNTS = 10000;
+    private static HashMap<Integer, Account> listOfAccountNums = new HashMap<>();
+    private Account account;
 
-    private static ArrayList<Bank> threads = new ArrayList<>();
-    private static final int PORT_NUMBER = 8080;
-    private String clientName;
+
+    public static ArrayList<Bank> threads = new ArrayList<>();
+    public static final int PORT_NUMBER = 8080;
+    public static final int AUCTION_CENTRAL_PORT = 8081;
+    public String clientName;
 
     private volatile boolean KILL;
-    private ObjectInputStream fromClient;
-    private ObjectOutputStream toClient;
+    ObjectInputStream fromClient;
+    ObjectOutputStream toClient;
+    String host = "127.0.0.1";
 
 
-    // Create Bank object from socket
+    // Start up bank to hold agent accounts
     public Bank(Socket socket)
     {
         this.bankSocket = socket;
@@ -40,21 +46,18 @@ public class Bank extends Thread
 
         } catch (IOException e)
         {
-
+            System.out.println(e.getMessage());
         }
 
     }
 
-    // start bank server and listen
-    // for messages
+    // Start listening for messages
     public void run()
     {
 
         try
         {
-
             Message request;
-
             while (!KILL)
             {
 
@@ -64,67 +67,57 @@ public class Bank extends Thread
                     while ((request = (Message) fromClient.readObject()) != null)
                     {
 
-                        // Form response based on message request
-
+                        // Read in messages and respond based on type
                         if (request.newAccount)
                         {
                             makeAccount(request);
-                            printAllClients();
+                        }
+                        if (request.isWin)
+                        {
+                            System.out.println("transferring funds from " + request.bankKey + " to auction house");
+                            Message m = getAccountInfo(request.bankKey);
+                            sendToUser(request.username, m);
+                            Message msg = new Message();
+                            msg.username = request.username;
+                            msg.fromBank = true;
+                            Account a = bankMap.get(request.bankKey);
+                            msg.message = "" + a.getHold(request.destination);
+                            sendToUser("CENTRAL", msg);
+                        }
+                        if (request.isLoss)
+                        {
+                            String s = removeHold(request.bankKey, request.destination);
+                            s += "\n\n" + getAccountInfo(request.bankKey);
+                            System.out.println(s);
+                            Message m = new Message();
+                            m.message = s;
+                            m.fromBank = true;
+                            sendToUser(request.agentName, m);
+                        }
+
+                        if (request.placeBid)
+                        {
+                            System.out.println("placing a hold of " + request.bid + " on " + request.username + "'s account.");
+                            Boolean held = placeHold(request.bankKey, request.message, request.bid);
+                            if (held)
+                            {
+                                System.out.println("Successfully placed a hold on the account of " + request.bid);
+                            } else
+                            {
+                                System.out.println("Not enough money to place a bid of " + request.bid);
+                            }
                         }
 
                         if (request.verify)
                         {
                             Message response = new Message();
-                            System.out.println("Entered If statement");
-                            clientName = "CENTRAL";
-
-                            Integer key = request.bankKey;
-                            if (bankMap.containsKey(key))
-                            {
-
-                                if (!registeredKeys.contains(key))
-                                {
-
-                                    response.isMember = true;
-                                    response.message = "USER IS MEMBER";
-                                    response.fromBank = true;
-                                    sendMessage(response);
-                                } else
-                                {
-                                    response.message = "Account already registered";
-                                    response.isMember = false;
-                                    sendMessage(response);
-
-                                }
-
-                            } else
-                            {
-
-                                response.isMember = false;
-                                response.message = "Bank Account not found";
-                                sendMessage(response);
-                            }
-
-
-                            for (Account i : bankMap.values())
-                            {
-                                System.out.println("Account = " + i.clientName);
-                            }
+                            this.clientName = "CENTRAL";
+                            response.isMember = bankMap.containsKey(request.bankKey);
+                            response.message = "USER IS MEMBER";
+                            response.fromBank = true;
+                            sendMessage(response);
 
                         }
-                        if (request.isOver)
-                        {
-                            System.out.println("TESTING");
-                            placeHold(request);
-                        }
-
-                        if (request.placeHold)
-                        {
-                            System.out.println("ENTER PLACE HOLD");
-                            placeHold(request);
-
-                        }
-
                         if (request.KILL)
                         {
                             Message response = new Message();
@@ -134,23 +127,21 @@ public class Bank extends Thread
                             break;
                         }
 
-                        printAllClients();
 
                     }
                 } catch (ClassNotFoundException ex)
                 {
-
+                    System.out.println(ex.getCause());
                 } catch (IOException ex)
                 {
-                    System.out.println("Unable to get streams from client in bank server " + ex.getMessage());
-
+                    System.out.println(ex.getCause());
                 }
             }
         } finally
         {
             try
             {
-                System.out.println(clientName + " is exiting bank...");
+                System.out.println("Agent exiting...");
                 threads.remove(this);
                 toClient.close();
                 fromClient.close();
@@ -163,52 +154,47 @@ public class Bank extends Thread
         }
     }
 
-    private void placeHold(Message request)
+    private Message getAccountInfo(int bankKey)
     {
+        Account a = bankMap.get(bankKey);
 
-        Integer bankKey = request.bankKey;
-        Integer amount = request.bidAmount;
-        System.out.println("bankkey->" + bankKey);
-        System.out.println("Amount->" + amount);
-        System.out.println(request.username);
+        Message m = new Message();
+        m.message = a.returnPackage();
+        return m;
+    }
 
-        if (bankMap.containsKey(bankKey))
-        {
-            System.out.println("ENTERED");
-            Account account = bankMap.get(bankKey);
+    private Boolean placeHold(int bankKey, String item, int bid)
+    {
+        Account a = bankMap.get(bankKey);
+        Boolean result = a.placeHold(bid, item);
+        return result;
+    }
 
-            if (account != null)
-            {
-                Message response = account.placeHoldOnAccount(request);
-                System.out.println("A " + response.username + " " + response.message);
-                response.username = request.username;
-                response.fromBank = true;
-                response.toUser = true;
-                sendMessage(response);
-            }
-
-        }
+    private String removeHold(int bankKey, String item)
+    {
+        Account a = bankMap.get(bankKey);
+        return a.removeHold(item);
     }
 
 
     private void makeAccount(Message request)
     {
-
         Message response = new Message();
         clientName = request.username;
         Account account = new Account(request.username);
-        bankMap.put(account.getKey(), account);
-        response.message = account.getAccountInfo();
-        response.bankKey = account.getKey();
+        Integer key = makeBankKey();
+        bankMap.put(key, account);
+        response.message = account.returnPackage();
+        response.message += "\nBank key = " + key;
+        response.bankKey = key;
         sendMessage(response);
     }
+
 
     private void sendMessage(Message msg)
     {
         try
         {
-
-            System.out.println(msg.username + " " + msg.message);
 
             toClient.writeObject(msg);
             toClient.flush();
@@ -219,18 +205,35 @@ public class Bank extends Thread
         }
     }
 
-
-    private void printAllClients()
+    private void sendToUser(String name, Message m)
     {
         for (Bank t : threads)
         {
-            System.out.println("Users Connected to bank-> " + t.clientName);
-
+            if (t.clientName != null)
+            {
+                if (t.clientName.equals(name))
+                {
+                    t.sendMessage(m);
+                }
+            }
         }
     }
 
 
-    // Start the bank
+    private int makeBankKey()
+    {
+        Random rand = new Random();
+        int key = rand.nextInt(50);
+        if (bankMap.containsKey(key))
+        {
+            makeBankKey();
+        }
+
+        bankMap.put(key, account);
+        return key;
+
+    }
+
     public static void main(String[] args)
     {
         System.out.println("Banking Server connected...");
@@ -240,10 +243,8 @@ public class Bank extends Thread
         {
             server = new ServerSocket(PORT_NUMBER);
 
-            while (!server.isClosed())
+            while (true)
             {
-
-
                 Bank b = new Bank(server.accept());
                 threads.add(b);
                 b.start();

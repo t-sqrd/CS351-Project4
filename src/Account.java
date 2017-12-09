@@ -1,122 +1,101 @@
 
-import java.util.ArrayList;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
-public class Account
+public class Account extends HashMap
 {
 
-    public String clientName;
-    private static ArrayList<Integer> usedAccountNumbers = new ArrayList<>();
-    private static ArrayList<Integer> usedBankKeys = new ArrayList<>();
+    private String clientName;
+    private static HashMap<Integer, String> ACCOUNT_MAP = new HashMap<>();
+    private Encrypt encrypt;
+    private BigInteger MY_PUBLIC_KEY;
+    private Integer clientNumber;
+    private int balance;
+    private Map<String, Integer> holds = new HashMap<>();
 
 
-    private Integer accountNumber;
-    private Integer bankKey;
-    private Integer initialDeposit;
-    private Integer tempBalance;
-    private Integer balance;
-
-    // Init account with client's name
     public Account(String clientName)
     {
         this.clientName = clientName;
-        this.initAccount();
+        this.clientNumber = makeAccountNumber();
+        ACCOUNT_MAP.put(clientNumber, clientName);
+        this.encrypt = new Encrypt(clientNumber.toString());
+        this.MY_PUBLIC_KEY = encrypt.getPublic();
+        int initialDeposit = 100;
+        this.balance = initialDeposit;
+
         System.out.println("Account [" + clientName + "] has been created...");
 
     }
 
-    // format users info
-    public String getAccountInfo()
+
+    // Get account information to send back
+    public String returnPackage()
     {
 
-        return "Name: " + clientName + ", Account Number: " + accountNumber +
-                ", Bank Key: " + bankKey + ", Initial Deposit: $" + initialDeposit + ".00";
+        String packet = "User = " + clientName + ", " + "Account Number = " + clientNumber + " , "
+                + "Your Public Key = " + MY_PUBLIC_KEY + " , "
+                + "Balance = " + balance;
+
+        return packet;
+
     }
 
-    public Integer getKey()
-    {
-        return bankKey;
-    }
-
-
-    // Attempt to place a hold on a bidders account
-    public Message placeHoldOnAccount(Message request)
-    {
-
-        Integer amount = request.bidAmount;
-        boolean isOver = request.isOver;
-        boolean WON = request.WON;
-
-        Message response = new Message();
-        response.username = clientName;
-        if (isOver)
-        {
-            response.hasFunds = true;
-            if (WON)
-            {
-                response.funds = balance - tempBalance;
-                balance -= tempBalance;
-                response.message = "You have won the item! Balance: " + balance;
-            } else
-            {
-                balance += amount;
-
-                response.message = "Auction for this item is over! You were outbidded! Balance: " + balance;
-
-            }
-            return response;
-        } else
-        {
-            if ((tempBalance - amount) <= 0)
-            {
-                response.message = "Insufficient funds. Hold denied";
-                System.out.println("HERE");
-                return response;
-            } else
-            {
-
-                balance -= amount;
-                response.message = "Hold placed on account. New Amount: " + balance;
-                return response;
-
-            }
-        }
-    }
-
-
-    private Integer makeBankKey()
+    private int makeAccountNumber()
     {
         Random rand = new Random();
-        Integer key = rand.nextInt(50);
-        if (usedBankKeys.contains(key))
-        {
-            makeBankKey();
-        }
-
-        return key;
-    }
-
-
-    private Integer makeAccountNumber()
-    {
-        Random rand = new Random();
-        Integer accountNum = rand.nextInt(10000);
-        if (usedAccountNumbers.contains(accountNum))
+        int x = rand.nextInt(100000);
+        if (ACCOUNT_MAP.containsKey(x))
         {
             makeAccountNumber();
         }
-        return accountNum;
+
+        return x;
     }
 
-
-    private void initAccount()
+    public int getHold(String item)
     {
-        this.accountNumber = makeAccountNumber();
-        this.bankKey = makeBankKey();
-        this.initialDeposit = 30000;
-        this.balance = initialDeposit;
-        tempBalance = balance;
+        if (holds.containsKey(item))
+        {
+            return holds.get(item);
+        }
+        return -1;
+    }
 
+    // places a hold on an account and
+    // removes bid amount from balance
+    public Boolean placeHold(Integer bid, String item)
+    {
+        System.out.println("bid is " + bid);
+        System.out.println("placed hold on account of bid value: " + bid.intValue());
+        if (bid > balance)
+        {
+            System.out.println(clientName + " does not have enough money to bid " + bid);
+            System.out.println("account balance is: " + balance);
+            return false;
+        } else
+        {
+            holds.put(item, bid);
+            balance -= bid;
+            System.out.println("account balance now is: " + balance);
+            return true;
+        }
+    }
+
+    // Removes a hold from an account
+    // and adds the bid back to account balance
+    public String removeHold(String item)
+    {
+        if (holds.containsKey(item))
+        {
+            Integer bid = holds.get(item);
+            balance += bid;
+            holds.remove(item);
+            return "Bank added back the " + bid + " that was used to bid for " + item;
+        }
+        return "";
     }
 
 

@@ -18,9 +18,9 @@ public class Encrypt
     private String message;
     private String temp = "";
 
-    // Class not currently used, but can
-    // be implemented to encrypt agent keys
 
+    // the Encrypt class was not implemented
+    // but it works correctly to encrypt keys
     public Encrypt()
     {
         init_P_Q();
@@ -70,7 +70,6 @@ public class Encrypt
 
         for (int i = 0; i < message.length(); i++)
         {
-            //temp += Integer.toString(message.codePointAt(i));
             temp += Integer.toString(message.codePointAt(i));
         }
     }
@@ -82,7 +81,7 @@ public class Encrypt
         this.PHI = (PRIME_P.subtract(BigInteger.ONE)).multiply(PRIME_Q.subtract(BigInteger.ONE));
         this.PUBLIC_KEY = betaCoPrime(PHI);
         this.PRIVATE_KEY = PUBLIC_KEY.modInverse(PHI);
-
+        ;
 
     }
 
@@ -162,7 +161,4 @@ public class Encrypt
         return ENCRYTED;
     }
 
-    public static void main(String[] args)
-    {
-    }
 }
