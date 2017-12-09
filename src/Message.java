@@ -21,7 +21,7 @@ public class Message implements Serializable {
     boolean selectHouse, updateAccount, WON, notification;
     boolean placeBid, verify, isMember, fromBank;
     boolean newHouse, newUser, placeHold, toUser, invalidBid, test;
-    Integer biddingKey, bankKey, index, bidAmount;
+    Integer biddingKey, bankKey, index, bidAmount, funds;
     String message, selectedHouse;
     String[] items;
     String[] houses;

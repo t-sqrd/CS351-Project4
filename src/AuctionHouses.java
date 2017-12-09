@@ -122,7 +122,7 @@ public class AuctionHouses extends Thread {
                     if (request.placeBid) {
                         response = new Message();
                         response.username = request.username;
-                        request.fromHouse = true;
+                        response.fromHouse = true;
                         response.placeBid = true;
                         response.biddingKey = request.biddingKey;
                         if (!itemsMain.get(request.index).placeBid(request.bidAmount, request.username)) {
