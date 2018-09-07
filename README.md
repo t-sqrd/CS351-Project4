@@ -1,6 +1,6 @@
 # Project-4-CS-351
 
-Alex Schmidt, Tyson Craner(tcranerunm), Andrew Morin(admorin), Beau Kujath(bkuj15).
+Alex Schmidt, Tyson Craner, Andrew Morin, Beau Kujath
 
 The auction simulator we made is mostly working, with a few minor bugs. You create just one Bank, and one Central Server. You can make as many Agent/House Clients as you want. Follow the prompts in the Agent Applications only, as the House Clients require no I/O. It uses integers for all bids and has a 30 second timer before you can win an item.
 
@@ -15,8 +15,7 @@ a message from the bank.
 
 ### Setup Instructions:
 Steps to compile:
-   1) clone the rep -> git clone https://github.com/alexGonzales/Project-4-CS-351.git
-   2) to run Bank, Agent, AuctionCentral,  or AuctionHouses: 
+   1) to run Bank, Agent, AuctionCentral,  or AuctionHouses: 
      
      * Run through the shell: 
         - navigate into /src directory 
